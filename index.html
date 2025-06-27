@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>樂樂 & 沐沐 氣喘日誌</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
+    table, th, td { border: 1px solid black; border-collapse: collapse; padding: 5px; }
+    input, select { margin: 5px; }
+    h1, h2, h3 { color: #2c3e50; }
+  </style>
+</head>
+<body>
+  <h1>氣喘日誌（樂樂 & 沐沐）</h1>
+
+  <form id="dailyForm">
+    <label>選擇小朋友:
+      <select id="childName">
+        <option>樂樂</option>
+        <option>沐沐</option>
+      </select>
+    </label><br>
+
+    <label>吸入劑（早）<input type="checkbox" id="inhalerMorning" /></label>
+    <label>吸入劑（晚）<input type="checkbox" id="inhalerEvening" /></label><br>
+    
+    <label>是否服用欣流<input type="checkbox" id="singulair" /></label><br>
+
+    <h3>飲食紀錄</h3>
+    <label>食物名稱<input type="text" id="foodName" /></label><br>
+    <label>成分<input type="text" id="ingredients" /></label><br>
+    <label>重量（g）<input type="number" id="weight" /></label><br>
+
+    <h3>症狀紀錄</h3>
+    <label>今天是否氣喘發作<input type="checkbox" id="asthmaAttack" /></label><br>
+    <label>有無使用緊急用藥<input type="checkbox" id="emergencyUsed" /></label><br>
+    <label>使用次數<input type="number" id="emergencyTimes" value="0" /></label><br>
+
+    <button type="submit">儲存今日紀錄</button>
+  </form>
+
+  <h2>歷史資料</h2>
+  <div id="historyTable"></div>
+
+  <h2>統計圖表</h2>
+  <canvas id="chart" width="600" height="200"></canvas>
+
+  <h3>匯出設定</h3>
+  <label>起始日期：<input type="date" id="startDate" /></label>
+  <label>結束日期：<input type="date" id="endDate" /></label>
+  <button onclick="exportToCSV()">匯出選定區間CSV</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const form = document.getElementById('dailyForm');
+    const historyTable = document.getElementById('historyTable');
+    let records = JSON.parse(localStorage.getItem('asthmaRecords')) || [];
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const record = {
+        date: new Date().toISOString().split('T')[0],
+        name: document.getElementById('childName').value,
+        inhalerMorning: document.getElementById('inhalerMorning').checked,
+        inhalerEvening: document.getElementById('inhalerEvening').checked,
+        singulair: document.getElementById('singulair').checked,
+        foodName: document.getElementById('foodName').value,
+        ingredients: document.getElementById('ingredients').value,
+        weight: parseInt(document.getElementById('weight').value) || 0,
+        asthmaAttack: document.getElementById('asthmaAttack').checked,
+        emergencyUsed: document.getElementById('emergencyUsed').checked,
+        emergencyTimes: parseInt(document.getElementById('emergencyTimes').value) || 0
+      };
+      records.push(record);
+      localStorage.setItem('asthmaRecords', JSON.stringify(records));
+      renderTable();
+      renderChart();
+      form.reset();
+    });
+
+    function renderTable() {
+      let html = "<table><tr><th>日期</th><th>小孩</th><th>吸入劑(早/晚)</th><th>欣流</th><th>食物</th><th>成分</th><th>重量</th><th>發作</th><th>緊急</th><th>次數</th></tr>";
+      records.forEach(r => {
+        html += `<tr>
+          <td>${r.date}</td>
+          <td>${r.name}</td>
+          <td>${r.inhalerMorning ? "✔️" : ""}/${r.inhalerEvening ? "✔️" : ""}</td>
+          <td>${r.singulair ? "✔️" : ""}</td>
+          <td>${r.foodName}</td>
+          <td>${r.ingredients}</td>
+          <td>${r.weight}</td>
+          <td>${r.asthmaAttack ? "✔️" : ""}</td>
+          <td>${r.emergencyUsed ? "✔️" : ""}</td>
+          <td>${r.emergencyTimes}</td>
+        </tr>`;
+      });
+      html += "</table>";
+      historyTable.innerHTML = html;
+    }
+
+    function renderChart() {
+      const ctx = document.getElementById('chart').getContext('2d');
+      const data = records.reduce((acc, r) => {
+        if (!acc.labels.includes(r.date)) acc.labels.push(r.date);
+        acc.data.push(r.emergencyTimes);
+        return acc;
+      }, { labels: [], data: [] });
+
+      if (window.chartObj) window.chartObj.destroy();
+
+      window.chartObj = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: data.labels,
+          datasets: [{
+            label: '緊急用藥次數',
+            data: data.data,
+            backgroundColor: 'rgba(255,99,132,0.5)'
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }
+
+    function exportToCSV() {
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+
+      if (!startDate || !endDate) {
+        alert("請選擇起始與結束日期");
+        return;
+      }
+
+      const filtered = records.filter(r => r.date >= startDate && r.date <= endDate);
+
+      if (filtered.length === 0) {
+        alert("此區間內沒有資料");
+        return;
+      }
+
+      let csv = "日期,小孩,吸入劑(早),吸入劑(晚),欣流,食物,成分,重量,發作,緊急,次數\n";
+      filtered.forEach(r => {
+        csv += `${r.date},${r.name},${r.inhalerMorning},${r.inhalerEvening},${r.singulair},${r.foodName},${r.ingredients},${r.weight},${r.asthmaAttack},${r.emergencyUsed},${r.emergencyTimes}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `氣喘紀錄_${startDate}_to_${endDate}.csv`;
+      link.click();
+    }
+
+    renderTable();
+    renderChart();
+  </script>
+</body>
+</html>
