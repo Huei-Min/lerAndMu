@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <title>樂樂＆沐沐 氣喘照護日誌</title>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://unpkg.com/jspdf@2.5.1/dist/fonts/NotoSansCJKtc-normal.js"></script>
+  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: sans-serif; padding: 20px; }
@@ -133,6 +137,7 @@
     async function exportToPDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
+      doc.setFont("NotoSansCJKtc", "normal");
       const startDate = document.getElementById('startDate').value;
       const endDate = document.getElementById('endDate').value;
       if (!startDate || !endDate) return alert("請選擇日期");
