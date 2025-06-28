@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>氣喘照護日誌（樂樂＆沐沐）</title>
+  <title>樂樂＆沐沐 氣喘照護日誌</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://unpkg.com/jspdf@2.5.1/dist/fonts/NotoSansCJKtc-normal.js"></script>
   <style>
@@ -48,6 +48,8 @@
       <label>白天喘鳴<input type="checkbox" id="dayWheezing"></label>
       <label>晚上喘鳴<input type="checkbox" id="nightWheezing"></label>
       <label>影響活動<input type="checkbox" id="activityLimited"></label>
+      <label>皮膚搔癢<input type="checkbox" id="skinItch"></label>
+      <label>起紅疹<input type="checkbox" id="rash"></label>
     </fieldset><br>
     <button type="submit">新增紀錄</button>
   </form>
@@ -71,7 +73,7 @@
         <th>時間</th><th>小朋友</th><th>吸入劑(早)</th><th>吸入劑(晚)</th><th>欣流</th>
         <th>食物</th><th>成分</th><th>重量</th><th>氣喘</th><th>緊急</th><th>次數</th>
         <th>咳嗽</th><th>鼻水</th><th>發燒</th><th>鼻炎</th>
-        <th>夜咳</th><th>白喘</th><th>晚喘</th><th>影響活動</th>
+        <th>夜咳</th><th>白喘</th><th>晚喘</th><th>影響活動</th><th>皮膚搔癢</th><th>起紅疹</th>
       </tr>
     </thead>
     <tbody id="tableBody"></tbody>
@@ -94,7 +96,8 @@
         "time", "name", "inhalerMorning", "inhalerEvening", "singulair",
         "foodName", "ingredients", "weight", "asthmaAttack", "emergencyUsed", "emergencyTimes",
         "coldCough", "coldRunnyNose", "coldFever", "rhinitis",
-        "nightCough", "dayWheezing", "nightWheezing", "activityLimited"
+        "nightCough", "dayWheezing", "nightWheezing", "activityLimited",
+        "skinItch", "rash"
       ];
       fields.forEach(f => {
         const cell = document.createElement("td");
@@ -137,7 +140,9 @@
       nightCough: document.getElementById("nightCough").checked,
       dayWheezing: document.getElementById("dayWheezing").checked,
       nightWheezing: document.getElementById("nightWheezing").checked,
-      activityLimited: document.getElementById("activityLimited").checked
+      activityLimited: document.getElementById("activityLimited").checked,
+      skinItch: document.getElementById("skinItch").checked,
+      rash: document.getElementById("rash").checked
     };
 
     records.push(record);
@@ -166,7 +171,7 @@
   // 匯出 CSV，合併同一天資料
   function exportToCSV() {
     const grouped = groupByDate(records);
-    const headers = ['日期', '小朋友', '吸入劑(早)', '吸入劑(晚)', '欣流', '食物', '成分', '重量', '氣喘', '緊急', '次數', '咳嗽', '鼻水', '發燒', '鼻炎', '夜咳', '白喘', '晚喘', '影響活動'];
+    const headers = ['日期', '小朋友', '吸入劑(早)', '吸入劑(晚)', '欣流', '食物', '成分', '重量', '氣喘', '緊急', '次數', '咳嗽', '鼻水', '發燒', '鼻炎', '夜咳', '白喘', '晚喘', '影響活動', '皮膚搔癢', '起紅疹'];
     const csvRows = [headers];
 
     Object.entries(grouped).forEach(([date, group]) => {
@@ -189,7 +194,9 @@
         nightCough: '',
         dayWheezing: '',
         nightWheezing: '',
-        activityLimited: ''
+        activityLimited: '',
+        skinItch: '',
+        rash: ''
       };
 
       group.data.forEach(r => {
@@ -206,6 +213,8 @@
         if (r.dayWheezing) entry.dayWheezing = '✔️';
         if (r.nightWheezing) entry.nightWheezing = '✔️';
         if (r.activityLimited) entry.activityLimited = '✔️';
+        if (r.skinItch) entry.skinItch = '✔️';
+        if (r.rash) entry.rash = '✔️';
 
         if (r.foodName) entry.foodName.push(r.foodName);
         if (r.ingredients) entry.ingredients.push(r.ingredients);
@@ -232,7 +241,9 @@
         entry.nightCough,
         entry.dayWheezing,
         entry.nightWheezing,
-        entry.activityLimited
+        entry.activityLimited,
+        entry.skinItch,
+        entry.rash
       ]);
     });
 
@@ -265,8 +276,8 @@
       }
 
       // 症狀標示
-      const symptomsLabels = ['吸入劑(早)', '吸入劑(晚)', '欣流', '氣喘', '使用緊急用藥', '咳嗽', '流鼻水', '發燒', '鼻炎', '夜咳', '白喘', '晚喘', '影響活動'];
-      const symptomFields = ['inhalerMorning','inhalerEvening','singulair','asthmaAttack','emergencyUsed','coldCough','coldRunnyNose','coldFever','rhinitis','nightCough','dayWheezing','nightWheezing','activityLimited'];
+      const symptomsLabels = ['吸入劑(早)', '吸入劑(晚)', '欣流', '氣喘', '使用緊急用藥', '咳嗽', '流鼻水', '發燒', '鼻炎', '夜咳', '白喘', '晚喘', '影響活動', '皮膚搔癢', '起紅疹'];
+      const symptomFields = ['inhalerMorning','inhalerEvening','singulair','asthmaAttack','emergencyUsed','coldCough','coldRunnyNose','coldFever','rhinitis','nightCough','dayWheezing','nightWheezing','activityLimited','skinItch','rash'];
       const symptomStatus = {};
 
       symptomFields.forEach(f => symptomStatus[f] = false);
