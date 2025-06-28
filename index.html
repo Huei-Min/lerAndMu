@@ -5,6 +5,7 @@
   <title>樂樂＆沐沐 氣喘照護日誌</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://unpkg.com/jspdf@2.5.1/dist/fonts/NotoSansCJKtc-normal.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     body { font-family: sans-serif; padding: 20px; }
     table, th, td { border: 1px solid #aaa; border-collapse: collapse; padding: 5px; }
@@ -249,14 +250,26 @@
 
     const csvContent = '\uFEFF' + csvRows.map(r => r.join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
+    a.href = url;
     a.download = '氣喘日誌_整合.csv';
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   // 匯出 PDF，合併同一天資料
   function exportToPDF() {
+    const element = document.getElementById('logTable'); // 或任何容器
+    html2pdf().set({
+      filename: '氣喘日誌.pdf',
+      html2canvas: { scale: 2 },
+      jsPDF: { format: 'a4', orientation: 'portrait' }
+    }).from(element).save();
+  }
+  /*function exportToPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     doc.setFontSize(14);
@@ -275,7 +288,7 @@
         doc.text(`食物：${foods}`, 10, y);
         y += 8;
       }
-
+    */
       // 症狀標示
       const symptomsLabels = ['吸入劑(早)', '吸入劑(晚)', '欣流', '氣喘', '使用緊急用藥', '咳嗽', '流鼻水', '發燒', '鼻炎', '夜咳', '白喘', '晚喘', '影響活動', '皮膚搔癢', '起紅疹'];
       const symptomFields = ['inhalerMorning','inhalerEvening','singulair','asthmaAttack','emergencyUsed','coldCough','coldRunnyNose','coldFever','rhinitis','nightCough','dayWheezing','nightWheezing','activityLimited','skinItch','rash'];
