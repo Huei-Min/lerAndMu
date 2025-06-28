@@ -3,42 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <title>氣喘照護日誌（樂樂＆沐沐）</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js">
-    function searchByDate() {
-      const searchDate = document.getElementById('searchDate').value;
-      const rows = tableBody.querySelectorAll('tr');
-      rows.forEach(row => {
-        const timeCell = row.querySelector('td');
-        const date = timeCell.textContent.split(' ')[0];
-        row.style.display = date === searchDate ? '' : 'none';
-      });
-    }
-
-    function resetSearch() {
-      document.getElementById('searchDate').value = '';
-      const rows = tableBody.querySelectorAll('tr');
-      rows.forEach(row => row.style.display = '');
-    }
-
-  </script>
-  <script src="https://unpkg.com/jspdf@2.5.1/dist/fonts/NotoSansCJKtc-normal.js">
-    function searchByDate() {
-      const searchDate = document.getElementById('searchDate').value;
-      const rows = tableBody.querySelectorAll('tr');
-      rows.forEach(row => {
-        const timeCell = row.querySelector('td');
-        const date = timeCell.textContent.split(' ')[0];
-        row.style.display = date === searchDate ? '' : 'none';
-      });
-    }
-
-    function resetSearch() {
-      document.getElementById('searchDate').value = '';
-      const rows = tableBody.querySelectorAll('tr');
-      rows.forEach(row => row.style.display = '');
-    }
-
-  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://unpkg.com/jspdf@2.5.1/dist/fonts/NotoSansCJKtc-normal.js"></script>
   <style>
     body { font-family: sans-serif; padding: 20px; }
     table, th, td { border: 1px solid #aaa; border-collapse: collapse; padding: 5px; }
@@ -87,7 +53,6 @@
   <button onclick="exportToCSV()">匯出 CSV</button>
   <button onclick="exportToPDF()">匯出 PDF 報告</button>
 
-  
   <h3>查詢特定日期紀錄</h3>
   <label>查詢日期：<input type="date" id="searchDate"></label>
   <button onclick="searchByDate()">查詢</button>
@@ -98,17 +63,173 @@
     <thead>
       <tr><th>時間</th><th>小朋友</th><th>吸入劑(早)</th><th>吸入劑(晚)</th><th>欣流</th><th>食物</th><th>成分</th><th>重量</th><th>氣喘</th><th>緊急</th><th>次數</th><th>咳嗽</th><th>鼻水</th><th>發燒</th><th>鼻炎</th></tr>
     </thead>
-    <tbody></tbody>
+    <tbody id="tableBody"></tbody>
   </table>
+
   <script>
-    // JavaScript omitted here for brevity since previously provided.
-  
+    const logForm = document.getElementById("logForm");
+    const tableBody = document.getElementById("tableBody");
+
+    let records = JSON.parse(localStorage.getItem("asthmaRecords") || "[]");
+
+    function renderTable() {
+      tableBody.innerHTML = '';
+      records.forEach(record => {
+        const row = document.createElement("tr");
+        Object.values(record).forEach(val => {
+          const cell = document.createElement("td");
+          cell.textContent = val === true ? '✔️' : val === false ? '' : val;
+          row.appendChild(cell);
+        });
+        tableBody.appendChild(row);
+      });
+    }
+
+    renderTable();
+
+    logForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const now = new Date();
+      const time = `${document.getElementById("date").value} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      const record = {
+        time,
+        name: document.getElementById("name").value,
+        inhalerMorning: document.getElementById("inhalerMorning").checked,
+        inhalerEvening: document.getElementById("inhalerEvening").checked,
+        singulair: document.getElementById("singulair").checked,
+        foodName: document.getElementById("foodName").value,
+        ingredients: document.getElementById("ingredients").value,
+        weight: document.getElementById("weight").value,
+        asthmaAttack: document.getElementById("asthmaAttack").checked,
+        emergencyUsed: document.getElementById("emergencyUsed").checked,
+        emergencyTimes: document.getElementById("emergencyTimes").value,
+        coldCough: document.getElementById("coldCough").checked,
+        coldRunnyNose: document.getElementById("coldRunnyNose").checked,
+        coldFever: document.getElementById("coldFever").checked,
+        rhinitis: document.getElementById("rhinitis").checked
+      };
+      records.push(record);
+      localStorage.setItem("asthmaRecords", JSON.stringify(records));
+      renderTable();
+      logForm.reset();
+    });
+
+    function groupByDate(data) {
+      const grouped = {};
+      data.forEach(r => {
+        const date = r.time.split(' ')[0];
+        if (!grouped[date]) {
+          grouped[date] = {
+            name: r.name,
+            data: [r]
+          };
+        } else {
+          grouped[date].data.push(r);
+        }
+      });
+      return grouped;
+    }
+
+    function exportToCSV() {
+      const grouped = groupByDate(records);
+      const headers = ['日期', '小朋友', '吸入劑(早)', '吸入劑(晚)', '欣流', '食物', '成分', '重量', '氣喘', '緊急', '次數', '咳嗽', '鼻水', '發燒', '鼻炎'];
+      const csvRows = [headers];
+
+      Object.entries(grouped).forEach(([date, group]) => {
+        const entry = {
+          date,
+          name: group.name,
+          inhalerMorning: '',
+          inhalerEvening: '',
+          singulair: '',
+          foodName: [],
+          ingredients: [],
+          weight: [],
+          asthmaAttack: '',
+          emergencyUsed: '',
+          emergencyTimes: 0,
+          coldCough: '',
+          coldRunnyNose: '',
+          coldFever: '',
+          rhinitis: ''
+        };
+
+        group.data.forEach(r => {
+          if (r.inhalerMorning) entry.inhalerMorning = '✔️';
+          if (r.inhalerEvening) entry.inhalerEvening = '✔️';
+          if (r.singulair) entry.singulair = '✔️';
+          if (r.asthmaAttack) entry.asthmaAttack = '✔️';
+          if (r.emergencyUsed) entry.emergencyUsed = '✔️';
+          if (r.coldCough) entry.coldCough = '✔️';
+          if (r.coldRunnyNose) entry.coldRunnyNose = '✔️';
+          if (r.coldFever) entry.coldFever = '✔️';
+          if (r.rhinitis) entry.rhinitis = '✔️';
+
+          entry.foodName.push(r.foodName);
+          entry.ingredients.push(r.ingredients);
+          entry.weight.push(r.weight);
+          entry.emergencyTimes += Number(r.emergencyTimes || 0);
+        });
+
+        csvRows.push([
+          entry.date,
+          entry.name,
+          entry.inhalerMorning,
+          entry.inhalerEvening,
+          entry.singulair,
+          entry.foodName.join(' / '),
+          entry.ingredients.join(' / '),
+          entry.weight.join(' / '),
+          entry.asthmaAttack,
+          entry.emergencyUsed,
+          entry.emergencyTimes,
+          entry.coldCough,
+          entry.coldRunnyNose,
+          entry.coldFever,
+          entry.rhinitis
+        ]);
+      });
+
+      const blob = new Blob([csvRows.map(r => r.join(',')).join('\n')], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = '氣喘日誌_整合.csv';
+      a.click();
+    }
+
+    function exportToPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFont('NotoSansCJKtc', 'normal');
+      doc.setFontSize(14);
+      const grouped = groupByDate(records);
+      let y = 20;
+
+      Object.entries(grouped).forEach(([date, group]) => {
+        doc.text(`日期：${date}  小朋友：${group.name}`, 10, y);
+        y += 10;
+        group.data.forEach((r, i) => {
+          doc.text(`(${i + 1}) 食物：${r.foodName}, 成分：${r.ingredients}, 重量：${r.weight}g`, 10, y);
+          y += 8;
+        });
+
+        doc.text(`症狀：${group.data.map(r => r.asthmaAttack ? '氣喘' : '').filter(Boolean).join(', ')}`, 10, y);
+        y += 8;
+
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+      });
+
+      doc.save("氣喘日誌_整合.pdf");
+    }
+
     function searchByDate() {
       const searchDate = document.getElementById('searchDate').value;
       const rows = tableBody.querySelectorAll('tr');
       rows.forEach(row => {
-        const timeCell = row.querySelector('td');
-        const date = timeCell.textContent.split(' ')[0];
+        const date = row.querySelector('td').textContent.split(' ')[0];
         row.style.display = date === searchDate ? '' : 'none';
       });
     }
@@ -118,7 +239,6 @@
       const rows = tableBody.querySelectorAll('tr');
       rows.forEach(row => row.style.display = '');
     }
-
   </script>
 </body>
 </html>
