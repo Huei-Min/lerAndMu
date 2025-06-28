@@ -405,51 +405,101 @@
   // 頁面載入時也呼叫一次，初始化圖表
   updateCharts();
 
-  function exportChartsToPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+  function updateCharts() {
+    const filtered = filterRecords(); // 同篩選條件
 
-    const selectedName = document.getElementById("exportName").value;
-    const startDate = document.getElementById("startDate").value || '開始';
-    const endDate = document.getElementById("endDate").value || '結束';
+    // 用藥項目
+    const medicationLabels = ['吸入劑(早)', '吸入劑(晚)', '欣流'];
+    const symptomLabels = ['氣喘發作', '使用緊急用藥', '咳嗽', '流鼻水', '發燒', '鼻炎', '夜咳', '白天喘鳴', '晚上喘鳴', '影響活動', '皮膚搔癢', '起紅疹'];
 
-    // 取得兩張 canvas 元素
-    const medCanvas = document.getElementById('chartMedication');
-    const symCanvas = document.getElementById('chartSymptoms');
+    // 初始化計數物件，分樂樂和沐沐
+    const medicationCounts = {
+      樂樂: { '吸入劑(早)': 0, '吸入劑(晚)': 0, '欣流': 0 },
+      沐沐: { '吸入劑(早)': 0, '吸入劑(晚)': 0, '欣流': 0 }
+    };
+    const symptomCounts = {
+      樂樂: {},
+      沐沐: {}
+    };
+    symptomLabels.forEach(label => {
+      symptomCounts.樂樂[label] = 0;
+      symptomCounts.沐沐[label] = 0;
+    });
 
-    // 轉成 base64 圖片
-    const medImgData = medCanvas.toDataURL('image/png', 1.0);
-    const symImgData = symCanvas.toDataURL('image/png', 1.0);
+    // 統計
+    filtered.forEach(r => {
+      const n = r.name;
+      if (r.inhalerMorning) medicationCounts[n]['吸入劑(早)']++;
+      if (r.inhalerEvening) medicationCounts[n]['吸入劑(晚)']++;
+      if (r.singulair) medicationCounts[n]['欣流']++;
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    let y = 20;
+      if (r.asthmaAttack) symptomCounts[n]['氣喘發作']++;
+      if (r.emergencyUsed) symptomCounts[n]['使用緊急用藥']++;
+      if (r.coldCough) symptomCounts[n]['咳嗽']++;
+      if (r.coldRunnyNose) symptomCounts[n]['流鼻水']++;
+      if (r.coldFever) symptomCounts[n]['發燒']++;
+      if (r.rhinitis) symptomCounts[n]['鼻炎']++;
+      if (r.nightCough) symptomCounts[n]['夜咳']++;
+      if (r.dayWheezing) symptomCounts[n]['白天喘鳴']++;
+      if (r.nightWheezing) symptomCounts[n]['晚上喘鳴']++;
+      if (r.activityLimited) symptomCounts[n]['影響活動']++;
+      if (r.skinItch) symptomCounts[n]['皮膚搔癢']++;
+      if (r.rash) symptomCounts[n]['起紅疹']++;
+    });
 
-    doc.setFontSize(14);
-    doc.text(`氣喘日誌 用藥與症狀統計分析`, 10, y);
-    y += 10;
-    doc.setFontSize(10);
-    doc.text(`小朋友：${selectedName}，日期範圍：${startDate} ～ ${endDate}`, 10, y);
-    y += 15;
+    // 銷毀舊圖表
+    if (medicationChart) medicationChart.destroy();
+    if (symptomsChart) symptomsChart.destroy();
 
-    // 繪製用藥圖
-    const imgWidth = pageWidth - 20; // 頁面寬度扣邊距
-    const imgHeight = (medCanvas.height / medCanvas.width) * imgWidth;
+    // 建立用藥情形圖表，兩個 dataset
+    const ctxMed = document.getElementById('chartMedication').getContext('2d');
+    medicationChart = new Chart(ctxMed, {
+      type: 'bar',
+      data: {
+        labels: medicationLabels,
+        datasets: [
+          {
+            label: 'Elvis',
+            data: medicationLabels.map(l => medicationCounts.樂樂[l]),
+            backgroundColor: 'rgba(54, 162, 235, 0.7)'
+          },
+          {
+            label: 'Enya',
+            data: medicationLabels.map(l => medicationCounts.沐沐[l]),
+            backgroundColor: 'rgba(255, 159, 64, 0.7)'
+          }
+        ]
+      },
+      options: {
+        scales: { y: { beginAtZero: true, precision: 0 } },
+        responsive: true,
+      }
+    });
 
-    doc.addImage(medImgData, 'PNG', 10, y, imgWidth, imgHeight);
-    y += imgHeight + 15;
-
-    // 繪製症狀圖
-    const symImgHeight = (symCanvas.height / symCanvas.width) * imgWidth;
-
-    // 如果圖表超過一頁，換頁
-    if (y + symImgHeight > doc.internal.pageSize.getHeight() - 20) {
-      doc.addPage();
-      y = 20;
-    }
-    doc.addImage(symImgData, 'PNG', 10, y, imgWidth, symImgHeight);
-
-    // 下載 PDF
-    doc.save(`氣喘日誌_圖表_${selectedName}_${startDate}_到_${endDate}.pdf`);
+    // 建立症狀圖表，兩個 dataset
+    const ctxSym = document.getElementById('chartSymptoms').getContext('2d');
+    symptomsChart = new Chart(ctxSym, {
+      type: 'bar',
+      data: {
+        labels: symptomLabels,
+        datasets: [
+          {
+            label: 'Elvis',
+            data: symptomLabels.map(l => symptomCounts.樂樂[l]),
+            backgroundColor: 'rgba(54, 162, 235, 0.7)'
+          },
+          {
+            label: 'Enya',
+            data: symptomLabels.map(l => symptomCounts.沐沐[l]),
+            backgroundColor: 'rgba(255, 159, 64, 0.7)'
+          }
+        ]
+      },
+      options: {
+        scales: { y: { beginAtZero: true, precision: 0 } },
+        responsive: true,
+      }
+    });
   }
 </script>
 </body>
