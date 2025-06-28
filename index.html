@@ -186,33 +186,18 @@
     });
   }
 
-  function exportToCSV() {
-    const selectedName = document.getElementById("exportName").value;
+  function exportFoodCSV() {
     const filtered = filterRecords();
-    const headers = ['時間', '小朋友', '吸入劑(早)', '吸入劑(晚)', '欣流', '食物', '成分', '重量', '氣喘', '緊急', '次數', '咳嗽', '鼻水', '發燒', '鼻炎', '夜咳', '白喘', '晚喘', '影響活動', '皮膚搔癢', '起紅疹'];
+    const headers = ['時間', '小朋友', '食物名稱', '成分', '重量', '皮膚搔癢', '起紅疹'];
     const csvRows = [headers];
 
     filtered.forEach(r => {
       csvRows.push([
         r.time,
         r.name,
-        r.inhalerMorning ? '✔️' : '',
-        r.inhalerEvening ? '✔️' : '',
-        r.singulair ? '✔️' : '',
         r.foodName || '',
         r.ingredients || '',
         r.weight || '',
-        r.asthmaAttack ? '✔️' : '',
-        r.emergencyUsed ? '✔️' : '',
-        r.emergencyTimes || 0,
-        r.coldCough ? '✔️' : '',
-        r.coldRunnyNose ? '✔️' : '',
-        r.coldFever ? '✔️' : '',
-        r.rhinitis ? '✔️' : '',
-        r.nightCough ? '✔️' : '',
-        r.dayWheezing ? '✔️' : '',
-        r.nightWheezing ? '✔️' : '',
-        r.activityLimited ? '✔️' : '',
         r.skinItch ? '✔️' : '',
         r.rash ? '✔️' : ''
       ]);
@@ -223,15 +208,52 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `氣喘日誌_${selectedName}_篩選記錄.csv`;
+    a.download = `氣喘日誌_食物_皮膚紀錄.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
 
-  function exportToPDF() {
-    const selectedName = document.getElementById("exportName").value;
+  function exportAsthmaCSV() {
+    const filtered = filterRecords();
+    const headers = ['時間', '小朋友', '吸入劑(早)', '吸入劑(晚)', '欣流', '氣喘', '緊急', '使用次數', '咳嗽', '鼻水', '發燒', '鼻炎', '夜咳', '白喘', '晚喘', '影響活動'];
+    const csvRows = [headers];
+
+    filtered.forEach(r => {
+      csvRows.push([
+        r.time,
+        r.name,
+        r.inhalerMorning ? '✔️' : '',
+        r.inhalerEvening ? '✔️' : '',
+        r.singulair ? '✔️' : '',
+        r.asthmaAttack ? '✔️' : '',
+        r.emergencyUsed ? '✔️' : '',
+        r.emergencyTimes || 0,
+        r.coldCough ? '✔️' : '',
+        r.coldRunnyNose ? '✔️' : '',
+        r.coldFever ? '✔️' : '',
+        r.rhinitis ? '✔️' : '',
+        r.nightCough ? '✔️' : '',
+        r.dayWheezing ? '✔️' : '',
+        r.nightWheezing ? '✔️' : '',
+        r.activityLimited ? '✔️' : ''
+      ]);
+    });
+
+    const csvContent = '\uFEFF' + csvRows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `氣喘日誌_用藥_症狀紀錄.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function exportToPDFSeparated() {
     const filtered = filterRecords();
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -239,6 +261,10 @@
     doc.setFont('NotoSansCJKtc', 'normal');
 
     let y = 20;
+
+    // 食物 + 皮膚症狀頁
+    doc.text('【食物紀錄與皮膚症狀】', 10, y);
+    y += 12;
 
     filtered.forEach(r => {
       if (y > 270) {
@@ -249,18 +275,37 @@
       doc.text(`時間：${r.time}  小朋友：${r.name}`, 10, y);
       y += 8;
 
-      const foodText = r.foodName ? `食物：${r.foodName} / 成分：${r.ingredients} / 重量：${r.weight}g` : '';
-      if (foodText) {
-        doc.text(foodText, 10, y);
-        y += 8;
+      const foodText = `食物：${r.foodName || '-'} / 成分：${r.ingredients || '-'} / 重量：${r.weight || '-'}g`;
+      doc.text(foodText, 10, y);
+      y += 8;
+
+      const skinText = `皮膚搔癢：${r.skinItch ? '✔️' : '-'}  起紅疹：${r.rash ? '✔️' : '-'}`;
+      doc.text(skinText, 10, y);
+      y += 12;
+    });
+
+    doc.addPage();
+    y = 20;
+    doc.text('【用藥與氣喘症狀紀錄】', 10, y);
+    y += 12;
+
+    filtered.forEach(r => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
       }
 
+      doc.text(`時間：${r.time}  小朋友：${r.name}`, 10, y);
+      y += 8;
+
+      const meds = [];
+      if (r.inhalerMorning) meds.push('吸入劑(早)');
+      if (r.inhalerEvening) meds.push('吸入劑(晚)');
+      if (r.singulair) meds.push('欣流');
+
       const symptoms = [];
-      if (r.inhalerMorning) symptoms.push('吸入劑(早)');
-      if (r.inhalerEvening) symptoms.push('吸入劑(晚)');
-      if (r.singulair) symptoms.push('欣流');
       if (r.asthmaAttack) symptoms.push('氣喘');
-      if (r.emergencyUsed) symptoms.push(`使用緊急用藥 (${r.emergencyTimes}次)`);
+      if (r.emergencyUsed) symptoms.push(`緊急用藥(${r.emergencyTimes || 0}次)`);
       if (r.coldCough) symptoms.push('咳嗽');
       if (r.coldRunnyNose) symptoms.push('流鼻水');
       if (r.coldFever) symptoms.push('發燒');
@@ -269,18 +314,20 @@
       if (r.dayWheezing) symptoms.push('白喘');
       if (r.nightWheezing) symptoms.push('晚喘');
       if (r.activityLimited) symptoms.push('影響活動');
-      if (r.skinItch) symptoms.push('皮膚搔癢');
-      if (r.rash) symptoms.push('起紅疹');
 
+      if (meds.length > 0) {
+        doc.text(`用藥：${meds.join('、')}`, 10, y);
+        y += 8;
+      }
       if (symptoms.length > 0) {
         doc.text(`症狀：${symptoms.join('、')}`, 10, y);
-        y += 10;
+        y += 12;
+      } else {
+        y += 8;
       }
-
-      y += 5;
     });
 
-    doc.save(`氣喘日誌_${selectedName}_篩選記錄.pdf`);
+    doc.save(`氣喘日誌_分開匯出.pdf`);
   }
 
   function filterTable() {
