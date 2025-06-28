@@ -269,6 +269,7 @@
       jsPDF: { format: 'a4', orientation: 'portrait' }
     }).from(element).save();
   }
+  
   /*function exportToPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -288,7 +289,7 @@
         doc.text(`食物：${foods}`, 10, y);
         y += 8;
       }
-    */
+    
       // 症狀標示
       const symptomsLabels = ['吸入劑(早)', '吸入劑(晚)', '欣流', '氣喘', '使用緊急用藥', '咳嗽', '流鼻水', '發燒', '鼻炎', '夜咳', '白喘', '晚喘', '影響活動', '皮膚搔癢', '起紅疹'];
       const symptomFields = ['inhalerMorning','inhalerEvening','singulair','asthmaAttack','emergencyUsed','coldCough','coldRunnyNose','coldFever','rhinitis','nightCough','dayWheezing','nightWheezing','activityLimited','skinItch','rash'];
@@ -320,7 +321,7 @@
     });
 
     doc.save("氣喘日誌_整合.pdf");
-  }
+  }*/
 
   // 查詢特定日期
   function searchByDate() {
