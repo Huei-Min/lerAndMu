@@ -36,12 +36,18 @@
     <fieldset><legend>症狀紀錄</legend>
       <label>氣喘發作<input type="checkbox" id="asthmaAttack"></label><br>
       <label>使用緊急用藥<input type="checkbox" id="emergencyUsed"></label>
-      <label>使用次數<input type="number" id="emergencyTimes" value="0"></label><br><br>
+      <label>使用次數<input type="number" id="emergencyTimes" value="0" min="0"></label><br><br>
       <strong>感冒症狀：</strong><br>
       <label>咳嗽<input type="checkbox" id="coldCough"></label>
       <label>流鼻水<input type="checkbox" id="coldRunnyNose"></label>
       <label>發燒<input type="checkbox" id="coldFever"></label><br><br>
       <label>鼻炎<input type="checkbox" id="rhinitis"></label>
+    </fieldset><br>
+    <fieldset><legend>其他觀察</legend>
+      <label>夜咳<input type="checkbox" id="nightCough"></label>
+      <label>白天喘鳴<input type="checkbox" id="dayWheezing"></label>
+      <label>晚上喘鳴<input type="checkbox" id="nightWheezing"></label>
+      <label>影響活動<input type="checkbox" id="activityLimited"></label>
     </fieldset><br>
     <button type="submit">新增紀錄</button>
   </form>
@@ -59,188 +65,254 @@
   <button onclick="resetSearch()">重設</button>
 
   <h3>紀錄表格</h3>
-  <table id="logTable">
+  <table id="logTable" style="width:100%;table-layout:fixed;word-wrap:break-word;">
     <thead>
-      <tr><th>時間</th><th>小朋友</th><th>吸入劑(早)</th><th>吸入劑(晚)</th><th>欣流</th><th>食物</th><th>成分</th><th>重量</th><th>氣喘</th><th>緊急</th><th>次數</th><th>咳嗽</th><th>鼻水</th><th>發燒</th><th>鼻炎</th></tr>
+      <tr>
+        <th>時間</th><th>小朋友</th><th>吸入劑(早)</th><th>吸入劑(晚)</th><th>欣流</th>
+        <th>食物</th><th>成分</th><th>重量</th><th>氣喘</th><th>緊急</th><th>次數</th>
+        <th>咳嗽</th><th>鼻水</th><th>發燒</th><th>鼻炎</th>
+        <th>夜咳</th><th>白喘</th><th>晚喘</th><th>影響活動</th>
+      </tr>
     </thead>
     <tbody id="tableBody"></tbody>
   </table>
 
-  <script>
-    const logForm = document.getElementById("logForm");
-    const tableBody = document.getElementById("tableBody");
+<script>
+  const logForm = document.getElementById("logForm");
+  const tableBody = document.getElementById("tableBody");
 
-    let records = JSON.parse(localStorage.getItem("asthmaRecords") || "[]");
+  // 讀取 localStorage
+  let records = JSON.parse(localStorage.getItem("asthmaRecords") || "[]");
 
-    function renderTable() {
-      tableBody.innerHTML = '';
-      records.forEach(record => {
-        const row = document.createElement("tr");
-        Object.values(record).forEach(val => {
-          const cell = document.createElement("td");
-          cell.textContent = val === true ? '✔️' : val === false ? '' : val;
-          row.appendChild(cell);
-        });
-        tableBody.appendChild(row);
+  // 顯示資料到表格
+  function renderTable() {
+    tableBody.innerHTML = '';
+    records.forEach(record => {
+      const row = document.createElement("tr");
+      // 按順序輸出所有欄位，確保順序與表頭一致
+      const fields = [
+        "time", "name", "inhalerMorning", "inhalerEvening", "singulair",
+        "foodName", "ingredients", "weight", "asthmaAttack", "emergencyUsed", "emergencyTimes",
+        "coldCough", "coldRunnyNose", "coldFever", "rhinitis",
+        "nightCough", "dayWheezing", "nightWheezing", "activityLimited"
+      ];
+      fields.forEach(f => {
+        const cell = document.createElement("td");
+        const val = record[f];
+        cell.textContent = (val === true) ? '✔️' : (val === false || val === undefined) ? '' : val;
+        row.appendChild(cell);
       });
-    }
+      tableBody.appendChild(row);
+    });
+  }
 
+  renderTable();
+
+  logForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    // 取得日期與當下時間(時分)
+    const now = new Date();
+    const dateStr = document.getElementById("date").value;
+    const timeStr = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
+    const dateTime = dateStr + " " + timeStr;
+
+    // 新增一筆紀錄
+    const record = {
+      time: dateTime,
+      name: document.getElementById("name").value,
+      inhalerMorning: document.getElementById("inhalerMorning").checked,
+      inhalerEvening: document.getElementById("inhalerEvening").checked,
+      singulair: document.getElementById("singulair").checked,
+      foodName: document.getElementById("foodName").value.trim(),
+      ingredients: document.getElementById("ingredients").value.trim(),
+      weight: document.getElementById("weight").value,
+      asthmaAttack: document.getElementById("asthmaAttack").checked,
+      emergencyUsed: document.getElementById("emergencyUsed").checked,
+      emergencyTimes: Number(document.getElementById("emergencyTimes").value) || 0,
+      coldCough: document.getElementById("coldCough").checked,
+      coldRunnyNose: document.getElementById("coldRunnyNose").checked,
+      coldFever: document.getElementById("coldFever").checked,
+      rhinitis: document.getElementById("rhinitis").checked,
+      nightCough: document.getElementById("nightCough").checked,
+      dayWheezing: document.getElementById("dayWheezing").checked,
+      nightWheezing: document.getElementById("nightWheezing").checked,
+      activityLimited: document.getElementById("activityLimited").checked
+    };
+
+    records.push(record);
+    localStorage.setItem("asthmaRecords", JSON.stringify(records));
     renderTable();
+    logForm.reset();
+  });
 
-    logForm.addEventListener("submit", function (e) {
-      e.preventDefault();
-      const now = new Date();
-      const dateStr = document.getElementById("date").value;
-      const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-      const dateTime = `${dateStr} ${timeStr}`;
-      const record = {
-        time: dateTime,
-        name: document.getElementById("name").value,
-        inhalerMorning: document.getElementById("inhalerMorning").checked,
-        inhalerEvening: document.getElementById("inhalerEvening").checked,
-        singulair: document.getElementById("singulair").checked,
-        foodName: document.getElementById("foodName").value,
-        ingredients: document.getElementById("ingredients").value,
-        weight: document.getElementById("weight").value,
-        asthmaAttack: document.getElementById("asthmaAttack").checked,
-        emergencyUsed: document.getElementById("emergencyUsed").checked,
-        emergencyTimes: document.getElementById("emergencyTimes").value,
-        coldCough: document.getElementById("coldCough").checked,
-        coldRunnyNose: document.getElementById("coldRunnyNose").checked,
-        coldFever: document.getElementById("coldFever").checked,
-        rhinitis: document.getElementById("rhinitis").checked
+  // 將資料依日期合併
+  function groupByDate(data) {
+    const grouped = {};
+    data.forEach(r => {
+      const date = r.time.split(' ')[0];
+      if (!grouped[date]) {
+        grouped[date] = {
+          name: r.name,
+          data: [r]
+        };
+      } else {
+        grouped[date].data.push(r);
+      }
+    });
+    return grouped;
+  }
+
+  // 匯出 CSV，合併同一天資料
+  function exportToCSV() {
+    const grouped = groupByDate(records);
+    const headers = ['日期', '小朋友', '吸入劑(早)', '吸入劑(晚)', '欣流', '食物', '成分', '重量', '氣喘', '緊急', '次數', '咳嗽', '鼻水', '發燒', '鼻炎', '夜咳', '白喘', '晚喘', '影響活動'];
+    const csvRows = [headers];
+
+    Object.entries(grouped).forEach(([date, group]) => {
+      const entry = {
+        date,
+        name: group.name,
+        inhalerMorning: '',
+        inhalerEvening: '',
+        singulair: '',
+        foodName: [],
+        ingredients: [],
+        weight: [],
+        asthmaAttack: '',
+        emergencyUsed: '',
+        emergencyTimes: 0,
+        coldCough: '',
+        coldRunnyNose: '',
+        coldFever: '',
+        rhinitis: '',
+        nightCough: '',
+        dayWheezing: '',
+        nightWheezing: '',
+        activityLimited: ''
       };
-      records.push(record);
-      localStorage.setItem("asthmaRecords", JSON.stringify(records));
-      renderTable();
-      logForm.reset();
+
+      group.data.forEach(r => {
+        if (r.inhalerMorning) entry.inhalerMorning = '✔️';
+        if (r.inhalerEvening) entry.inhalerEvening = '✔️';
+        if (r.singulair) entry.singulair = '✔️';
+        if (r.asthmaAttack) entry.asthmaAttack = '✔️';
+        if (r.emergencyUsed) entry.emergencyUsed = '✔️';
+        if (r.coldCough) entry.coldCough = '✔️';
+        if (r.coldRunnyNose) entry.coldRunnyNose = '✔️';
+        if (r.coldFever) entry.coldFever = '✔️';
+        if (r.rhinitis) entry.rhinitis = '✔️';
+        if (r.nightCough) entry.nightCough = '✔️';
+        if (r.dayWheezing) entry.dayWheezing = '✔️';
+        if (r.nightWheezing) entry.nightWheezing = '✔️';
+        if (r.activityLimited) entry.activityLimited = '✔️';
+
+        if (r.foodName) entry.foodName.push(r.foodName);
+        if (r.ingredients) entry.ingredients.push(r.ingredients);
+        if (r.weight) entry.weight.push(r.weight);
+        entry.emergencyTimes += Number(r.emergencyTimes || 0);
+      });
+
+      csvRows.push([
+        entry.date,
+        entry.name,
+        entry.inhalerMorning,
+        entry.inhalerEvening,
+        entry.singulair,
+        entry.foodName.join(' / '),
+        entry.ingredients.join(' / '),
+        entry.weight.join(' / '),
+        entry.asthmaAttack,
+        entry.emergencyUsed,
+        entry.emergencyTimes,
+        entry.coldCough,
+        entry.coldRunnyNose,
+        entry.coldFever,
+        entry.rhinitis,
+        entry.nightCough,
+        entry.dayWheezing,
+        entry.nightWheezing,
+        entry.activityLimited
+      ]);
     });
 
-    function groupByDate(data) {
-      const grouped = {};
-      data.forEach(r => {
-        const date = r.time.split(' ')[0];
-        if (!grouped[date]) {
-          grouped[date] = {
-            name: r.name,
-            data: [r]
-          };
-        } else {
-          grouped[date].data.push(r);
-        }
-      });
-      return grouped;
-    }
+    const blob = new Blob([csvRows.map(r => r.join(',')).join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '氣喘日誌_整合.csv';
+    a.click();
+  }
 
-    function exportToCSV() {
-      const grouped = groupByDate(records);
-      const headers = ['日期', '小朋友', '吸入劑(早)', '吸入劑(晚)', '欣流', '食物', '成分', '重量', '氣喘', '緊急', '次數', '咳嗽', '鼻水', '發燒', '鼻炎'];
-      const csvRows = [headers];
+  // 匯出 PDF，合併同一天資料
+  function exportToPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFont('NotoSansCJKtc', 'normal');
+    doc.setFontSize(14);
 
-      Object.entries(grouped).forEach(([date, group]) => {
-        const entry = {
-          date,
-          name: group.name,
-          inhalerMorning: '',
-          inhalerEvening: '',
-          singulair: '',
-          foodName: [],
-          ingredients: [],
-          weight: [],
-          asthmaAttack: '',
-          emergencyUsed: '',
-          emergencyTimes: 0,
-          coldCough: '',
-          coldRunnyNose: '',
-          coldFever: '',
-          rhinitis: ''
-        };
+    const grouped = groupByDate(records);
+    let y = 20;
 
-        group.data.forEach(r => {
-          if (r.inhalerMorning) entry.inhalerMorning = '✔️';
-          if (r.inhalerEvening) entry.inhalerEvening = '✔️';
-          if (r.singulair) entry.singulair = '✔️';
-          if (r.asthmaAttack) entry.asthmaAttack = '✔️';
-          if (r.emergencyUsed) entry.emergencyUsed = '✔️';
-          if (r.coldCough) entry.coldCough = '✔️';
-          if (r.coldRunnyNose) entry.coldRunnyNose = '✔️';
-          if (r.coldFever) entry.coldFever = '✔️';
-          if (r.rhinitis) entry.rhinitis = '✔️';
+    Object.entries(grouped).forEach(([date, group]) => {
+      doc.text(`日期：${date}  小朋友：${group.name}`, 10, y);
+      y += 10;
 
-          entry.foodName.push(r.foodName);
-          entry.ingredients.push(r.ingredients);
-          entry.weight.push(r.weight);
-          entry.emergencyTimes += Number(r.emergencyTimes || 0);
-        });
-
-        csvRows.push([
-          entry.date,
-          entry.name,
-          entry.inhalerMorning,
-          entry.inhalerEvening,
-          entry.singulair,
-          entry.foodName.join(' / '),
-          entry.ingredients.join(' / '),
-          entry.weight.join(' / '),
-          entry.asthmaAttack,
-          entry.emergencyUsed,
-          entry.emergencyTimes,
-          entry.coldCough,
-          entry.coldRunnyNose,
-          entry.coldFever,
-          entry.rhinitis
-        ]);
-      });
-
-      const blob = new Blob([csvRows.map(r => r.join(',')).join('\n')], { type: 'text/csv' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = '氣喘日誌_整合.csv';
-      a.click();
-    }
-
-    function exportToPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      doc.setFont('NotoSansCJKtc', 'normal');
-      doc.setFontSize(14);
-      const grouped = groupByDate(records);
-      let y = 20;
-
-      Object.entries(grouped).forEach(([date, group]) => {
-        doc.text(`日期：${date}  小朋友：${group.name}`, 10, y);
-        y += 10;
-        group.data.forEach((r, i) => {
-          doc.text(`(${i + 1}) 食物：${r.foodName}, 成分：${r.ingredients}, 重量：${r.weight}g`, 10, y);
-          y += 8;
-        });
-
-        doc.text(`症狀：${group.data.map(r => r.asthmaAttack ? '氣喘' : '').filter(Boolean).join(', ')}`, 10, y);
+      // 合併描述，示範用食物和症狀簡略列出
+      const foods = group.data.map(r => r.foodName).filter(Boolean).join(' / ');
+      if(foods) {
+        doc.text(`食物：${foods}`, 10, y);
         y += 8;
+      }
 
-        if (y > 270) {
-          doc.addPage();
-          y = 20;
-        }
+      // 症狀標示
+      const symptomsLabels = ['吸入劑(早)', '吸入劑(晚)', '欣流', '氣喘', '使用緊急用藥', '咳嗽', '流鼻水', '發燒', '鼻炎', '夜咳', '白喘', '晚喘', '影響活動'];
+      const symptomFields = ['inhalerMorning','inhalerEvening','singulair','asthmaAttack','emergencyUsed','coldCough','coldRunnyNose','coldFever','rhinitis','nightCough','dayWheezing','nightWheezing','activityLimited'];
+      const symptomStatus = {};
+
+      symptomFields.forEach(f => symptomStatus[f] = false);
+
+      group.data.forEach(r => {
+        symptomFields.forEach(f => {
+          if (r[f]) symptomStatus[f] = true;
+        });
       });
 
-      doc.save("氣喘日誌_整合.pdf");
-    }
+      let symptomText = symptomFields.map((f,i) => symptomStatus[f] ? symptomsLabels[i] : null).filter(Boolean).join('、');
+      if(symptomText){
+        doc.text(`症狀：${symptomText}`, 10, y);
+        y += 10;
+      }
 
-    function searchByDate() {
-      const searchDate = document.getElementById('searchDate').value;
-      const rows = tableBody.querySelectorAll('tr');
-      rows.forEach(row => {
-        const date = row.querySelector('td').textContent.split(' ')[0];
-        row.style.display = date === searchDate ? '' : 'none';
-      });
-    }
+      // 用藥次數合計
+      let emergencyTimesSum = group.data.reduce((sum,r) => sum + Number(r.emergencyTimes || 0),0);
+      doc.text(`緊急用藥次數合計：${emergencyTimesSum}`, 10, y);
+      y += 12;
 
-    function resetSearch() {
-      document.getElementById('searchDate').value = '';
-      const rows = tableBody.querySelectorAll('tr');
-      rows.forEach(row => row.style.display = '');
-    }
-  </script>
+      if(y > 270){
+        doc.addPage();
+        y = 20;
+      }
+    });
+
+    doc.save("氣喘日誌_整合.pdf");
+  }
+
+  // 查詢特定日期
+  function searchByDate() {
+    const searchDate = document.getElementById('searchDate').value;
+    const rows = tableBody.querySelectorAll('tr');
+    rows.forEach(row => {
+      const date = row.querySelector('td').textContent.split(' ')[0];
+      row.style.display = (date === searchDate) ? '' : 'none';
+    });
+  }
+
+  // 重設查詢，顯示全部
+  function resetSearch() {
+    document.getElementById('searchDate').value = '';
+    const rows = tableBody.querySelectorAll('tr');
+    rows.forEach(row => row.style.display = '');
+  }
+</script>
 </body>
 </html>
