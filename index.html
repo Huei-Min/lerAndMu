@@ -6,6 +6,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://unpkg.com/jspdf@2.5.1/dist/fonts/NotoSansCJKtc-normal.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { font-family: sans-serif; padding: 20px; }
     table, th, td { border: 1px solid #aaa; border-collapse: collapse; padding: 5px; }
@@ -98,6 +99,12 @@
     </thead>
     <tbody id="tableBody"></tbody>
   </table>
+
+  <h3>用藥與症狀統計分析</h3>
+  <canvas id="chartMedication" width="600" height="300"></canvas>
+  <canvas id="chartSymptoms" width="600" height="300" style="margin-top: 40px;"></canvas>
+  <button onclick="updateCharts()">更新圖表</button>
+  <button onclick="exportChartsToPDF()">匯出圖表 PDF</button>
 
 <script>
   const logForm = document.getElementById("logForm");
@@ -302,6 +309,147 @@
     document.getElementById('searchName').value = 'all';
     const rows = tableBody.querySelectorAll('tr');
     rows.forEach(row => row.style.display = '');
+  }
+
+  let medicationChart = null;
+  let symptomsChart = null;
+
+  function updateCharts() {
+    const filtered = filterRecords(); // 用同樣的篩選條件，方便跟匯出、表格同步
+
+    // 用藥情形統計 (吸入劑早晚、欣流)
+    const medicationCounts = {
+      '吸入劑(早)': 0,
+      '吸入劑(晚)': 0,
+      '欣流': 0
+    };
+
+    // 症狀統計 (氣喘發作、緊急用藥、咳嗽、鼻水、發燒、鼻炎、夜咳、白喘、晚喘、影響活動、皮膚搔癢、起紅疹)
+    const symptomCounts = {
+      '氣喘發作': 0,
+      '使用緊急用藥': 0,
+      '咳嗽': 0,
+      '流鼻水': 0,
+      '發燒': 0,
+      '鼻炎': 0,
+      '夜咳': 0,
+      '白天喘鳴': 0,
+      '晚上喘鳴': 0,
+      '影響活動': 0,
+      '皮膚搔癢': 0,
+      '起紅疹': 0
+    };
+
+    filtered.forEach(r => {
+      if (r.inhalerMorning) medicationCounts['吸入劑(早)']++;
+      if (r.inhalerEvening) medicationCounts['吸入劑(晚)']++;
+      if (r.singulair) medicationCounts['欣流']++;
+
+      if (r.asthmaAttack) symptomCounts['氣喘發作']++;
+      if (r.emergencyUsed) symptomCounts['使用緊急用藥']++;
+      if (r.coldCough) symptomCounts['咳嗽']++;
+      if (r.coldRunnyNose) symptomCounts['流鼻水']++;
+      if (r.coldFever) symptomCounts['發燒']++;
+      if (r.rhinitis) symptomCounts['鼻炎']++;
+      if (r.nightCough) symptomCounts['夜咳']++;
+      if (r.dayWheezing) symptomCounts['白天喘鳴']++;
+      if (r.nightWheezing) symptomCounts['晚上喘鳴']++;
+      if (r.activityLimited) symptomCounts['影響活動']++;
+      if (r.skinItch) symptomCounts['皮膚搔癢']++;
+      if (r.rash) symptomCounts['起紅疹']++;
+    });
+
+    // 先銷毀舊圖表（若存在）
+    if (medicationChart) medicationChart.destroy();
+    if (symptomsChart) symptomsChart.destroy();
+
+    // 建立用藥情形圖表
+    const ctxMed = document.getElementById('chartMedication').getContext('2d');
+    medicationChart = new Chart(ctxMed, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(medicationCounts),
+        datasets: [{
+          label: '用藥次數',
+          data: Object.values(medicationCounts),
+          backgroundColor: 'rgba(54, 162, 235, 0.7)'
+        }]
+      },
+      options: {
+        scales: { y: { beginAtZero: true, precision: 0 } },
+        responsive: true,
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    // 建立症狀狀況圖表
+    const ctxSym = document.getElementById('chartSymptoms').getContext('2d');
+    symptomsChart = new Chart(ctxSym, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(symptomCounts),
+        datasets: [{
+          label: '症狀出現次數',
+          data: Object.values(symptomCounts),
+          backgroundColor: 'rgba(255, 99, 132, 0.7)'
+        }]
+      },
+      options: {
+        scales: { y: { beginAtZero: true, precision: 0 } },
+        responsive: true,
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  // 頁面載入時也呼叫一次，初始化圖表
+  updateCharts();
+
+  function exportChartsToPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const selectedName = document.getElementById("exportName").value;
+    const startDate = document.getElementById("startDate").value || '開始';
+    const endDate = document.getElementById("endDate").value || '結束';
+
+    // 取得兩張 canvas 元素
+    const medCanvas = document.getElementById('chartMedication');
+    const symCanvas = document.getElementById('chartSymptoms');
+
+    // 轉成 base64 圖片
+    const medImgData = medCanvas.toDataURL('image/png', 1.0);
+    const symImgData = symCanvas.toDataURL('image/png', 1.0);
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 20;
+
+    doc.setFontSize(14);
+    doc.text(`氣喘日誌 用藥與症狀統計分析`, 10, y);
+    y += 10;
+    doc.setFontSize(10);
+    doc.text(`小朋友：${selectedName}，日期範圍：${startDate} ～ ${endDate}`, 10, y);
+    y += 15;
+
+    // 繪製用藥圖
+    const imgWidth = pageWidth - 20; // 頁面寬度扣邊距
+    const imgHeight = (medCanvas.height / medCanvas.width) * imgWidth;
+
+    doc.addImage(medImgData, 'PNG', 10, y, imgWidth, imgHeight);
+    y += imgHeight + 15;
+
+    // 繪製症狀圖
+    const symImgHeight = (symCanvas.height / symCanvas.width) * imgWidth;
+
+    // 如果圖表超過一頁，換頁
+    if (y + symImgHeight > doc.internal.pageSize.getHeight() - 20) {
+      doc.addPage();
+      y = 20;
+    }
+    doc.addImage(symImgData, 'PNG', 10, y, imgWidth, symImgHeight);
+
+    // 下載 PDF
+    doc.save(`氣喘日誌_圖表_${selectedName}_${startDate}_到_${endDate}.pdf`);
   }
 </script>
 </body>
