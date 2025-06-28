@@ -1,118 +1,121 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <title>樂樂＆沐沐 氣喘照護日誌</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://unpkg.com/jspdf@2.5.1/dist/fonts/NotoSansCJKtc-normal.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    table, th, td { border: 1px solid #aaa; border-collapse: collapse; padding: 5px; }
-    th { background: #eee; }
-    label { margin-right: 10px; }
-    h2 { color: #5b5b5b; }
-  </style>
+<meta charset="UTF-8" />
+<title>樂樂＆沐沐 氣喘照護日誌</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  body { font-family: sans-serif; padding: 20px; }
+  table, th, td { border: 1px solid #aaa; border-collapse: collapse; padding: 5px; }
+  th { background: #eee; }
+  label { margin-right: 10px; }
+  h2 { color: #5b5b5b; }
+</style>
 </head>
 <body>
-  <h2>樂樂＆沐沐 氣喘照護日誌</h2>
-  <form id="logForm">
-    <label>日期：<input type="date" id="date" required></label><br><br>
-    <label>小朋友：
-      <select id="name" required>
-        <option value="樂樂">樂樂</option>
-        <option value="沐沐">沐沐</option>
-      </select>
-    </label><br><br>
-    <fieldset><legend>用藥情形</legend>
-      <label>吸入劑（早）<input type="checkbox" id="inhalerMorning"></label>
-      <label>吸入劑（晚）<input type="checkbox" id="inhalerEvening"></label>
-      <label>欣流<input type="checkbox" id="singulair"></label>
-    </fieldset><br>
-    <fieldset><legend>飲食</legend>
-      <label>食物名稱<input type="text" id="foodName"></label>
-      <label>成分<input type="text" id="ingredients"></label>
-      <label>重量（g）<input type="number" id="weight"></label>
-    </fieldset><br>
-    <fieldset><legend>症狀紀錄</legend>
-      <label>氣喘發作<input type="checkbox" id="asthmaAttack"></label><br>
-      <label>使用緊急用藥<input type="checkbox" id="emergencyUsed"></label>
-      <label>使用次數<input type="number" id="emergencyTimes" value="0" min="0"></label><br><br>
-      <strong>感冒症狀：</strong><br>
-      <label>咳嗽<input type="checkbox" id="coldCough"></label>
-      <label>流鼻水<input type="checkbox" id="coldRunnyNose"></label>
-      <label>發燒<input type="checkbox" id="coldFever"></label><br><br>
-      <label>鼻炎<input type="checkbox" id="rhinitis"></label>
-    </fieldset><br>
-    <fieldset><legend>其他觀察</legend>
-      <label>夜咳<input type="checkbox" id="nightCough"></label>
-      <label>白天喘鳴<input type="checkbox" id="dayWheezing"></label>
-      <label>晚上喘鳴<input type="checkbox" id="nightWheezing"></label>
-      <label>影響活動<input type="checkbox" id="activityLimited"></label>
-      <label>皮膚搔癢<input type="checkbox" id="skinItch"></label>
-      <label>起紅疹<input type="checkbox" id="rash"></label>
-    </fieldset><br>
-    <button type="submit">新增紀錄</button>
-  </form>
 
-  <br><hr><br>
+<h2>樂樂＆沐沐 氣喘照護日誌</h2>
 
-  <label>選擇小朋友：
-      <select id="exportName">
-        <option value="all">全部</option>
-        <option value="樂樂">樂樂</option>
-        <option value="沐沐">沐沐</option>
-      </select>
-    </label>
-
-  <label>選擇起始日期<input type="date" id="startDate"></label>
-  <label>結束日期<input type="date" id="endDate"></label>
-
-  <button onclick="filterTable()">篩選顯示</button>
-  <button onclick="exportFoodCSV()">匯出 食物+皮膚 CSV</button>
-  <button onclick="exportAsthmaCSV()">匯出 用藥+症狀 CSV</button>
-  <button onclick="exportToPDFSeparated()">匯出 分開PDF</button>
-  <!--<button onclick="exportToCSV()">匯出 CSV</button>
-  <button onclick="exportToPDF()">匯出 PDF 報告</button>  -->
-
-  <h3>查詢特定日期紀錄</h3>
-  <label>查詢日期：<input type="date" id="searchDate"></label>
-
+<form id="logForm">
+  <label>日期：<input type="date" id="date" required></label><br><br>
   <label>小朋友：
-      <select id="searchName">
-        <option value="all">全部</option>
-        <option value="樂樂">樂樂</option>
-        <option value="沐沐">沐沐</option>
-      </select>
-  </label>
-  
-  <button onclick="searchByDate()">查詢</button>
-  <button onclick="resetSearch()">重設</button>
+    <select id="name" required>
+      <option value="樂樂">樂樂</option>
+      <option value="沐沐">沐沐</option>
+    </select>
+  </label><br><br>
 
-  <h3>紀錄表格</h3>
-  <table id="logTable" style="width:100%;table-layout:fixed;word-wrap:break-word;">
-    <thead>
-      <tr>
-        <th>時間</th><th>小朋友</th><th>吸入劑(早)</th><th>吸入劑(晚)</th><th>欣流</th>
-        <th>食物</th><th>成分</th><th>重量</th><th>氣喘</th><th>緊急</th><th>次數</th>
-        <th>咳嗽</th><th>鼻水</th><th>發燒</th><th>鼻炎</th>
-        <th>夜咳</th><th>白喘</th><th>晚喘</th><th>影響活動</th><th>皮膚搔癢</th><th>起紅疹</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
+  <fieldset><legend>用藥情形</legend>
+    <label>吸入劑（早）<input type="checkbox" id="inhalerMorning"></label>
+    <label>吸入劑（晚）<input type="checkbox" id="inhalerEvening"></label>
+    <label>欣流<input type="checkbox" id="singulair"></label>
+  </fieldset><br>
 
-  <h3>用藥與症狀統計分析</h3>
-  <canvas id="chartMedication" width="600" height="300"></canvas>
-  <canvas id="chartSymptoms" width="600" height="300" style="margin-top: 40px;"></canvas>
-  <button onclick="updateCharts()">更新圖表</button>
-  <button onclick="exportChartsToPDF()">匯出圖表 PDF</button>
+  <fieldset><legend>飲食</legend>
+    <label>食物名稱<input type="text" id="foodName"></label>
+    <label>成分<input type="text" id="ingredients"></label>
+    <label>重量（g）<input type="number" id="weight"></label>
+  </fieldset><br>
+
+  <fieldset><legend>症狀紀錄</legend>
+    <label>氣喘發作<input type="checkbox" id="asthmaAttack"></label><br>
+    <label>使用緊急用藥<input type="checkbox" id="emergencyUsed"></label>
+    <label>使用次數<input type="number" id="emergencyTimes" value="0" min="0"></label><br><br>
+    <strong>感冒症狀：</strong><br>
+    <label>咳嗽<input type="checkbox" id="coldCough"></label>
+    <label>流鼻水<input type="checkbox" id="coldRunnyNose"></label>
+    <label>發燒<input type="checkbox" id="coldFever"></label><br><br>
+    <label>鼻炎<input type="checkbox" id="rhinitis"></label>
+  </fieldset><br>
+
+  <fieldset><legend>其他觀察</legend>
+    <label>夜咳<input type="checkbox" id="nightCough"></label>
+    <label>白天喘鳴<input type="checkbox" id="dayWheezing"></label>
+    <label>晚上喘鳴<input type="checkbox" id="nightWheezing"></label>
+    <label>運動喘鳴<input type="checkbox" id="exerciseWheezing"></label>
+    <label>影響活動<input type="checkbox" id="activityLimited"></label>
+    <label>皮膚搔癢<input type="checkbox" id="skinItch"></label>
+    <label>起紅疹<input type="checkbox" id="rash"></label>
+  </fieldset><br>
+
+  <button type="submit">新增紀錄</button>
+</form>
+
+<br><hr><br>
+
+<label>選擇小朋友：
+  <select id="exportName">
+    <option value="all">全部</option>
+    <option value="樂樂">樂樂</option>
+    <option value="沐沐">沐沐</option>
+  </select>
+</label>
+
+<label>選擇起始日期<input type="date" id="startDate"></label>
+<label>結束日期<input type="date" id="endDate"></label>
+
+<button onclick="filterTable()">篩選顯示</button>
+<button onclick="exportFoodCSV()">匯出 食物+皮膚 CSV</button>
+<button onclick="exportAsthmaCSV()">匯出 用藥+症狀 CSV</button>
+<button onclick="exportToPDFSeparated()">匯出 分開 PDF</button>
+
+<h3>查詢特定日期紀錄</h3>
+<label>查詢日期：<input type="date" id="searchDate"></label>
+
+<label>小朋友：
+  <select id="searchName">
+    <option value="all">全部</option>
+    <option value="樂樂">樂樂</option>
+    <option value="沐沐">沐沐</option>
+  </select>
+</label>
+
+<button onclick="searchByDate()">查詢</button>
+<button onclick="resetSearch()">重設</button>
+
+<h3>紀錄表格</h3>
+<table id="logTable" style="width:100%;table-layout:fixed;word-wrap:break-word;">
+  <thead>
+    <tr>
+      <th>時間</th><th>小朋友</th><th>吸入劑(早)</th><th>吸入劑(晚)</th><th>欣流</th>
+      <th>食物</th><th>成分</th><th>重量</th><th>氣喘</th><th>緊急</th><th>次數</th>
+      <th>咳嗽</th><th>鼻水</th><th>發燒</th><th>鼻炎</th>
+      <th>夜咳</th><th>白喘</th><th>晚喘</th><th>運動喘鳴</th><th>影響活動</th><th>皮膚搔癢</th><th>起紅疹</th>
+    </tr>
+  </thead>
+  <tbody id="tableBody"></tbody>
+</table>
+
+<h3>用藥與症狀統計分析</h3>
+<canvas id="chartMedication" width="600" height="300"></canvas>
+<canvas id="chartSymptoms" width="600" height="300" style="margin-top: 40px;"></canvas>
+<button onclick="updateCharts()">更新圖表</button>
+<button onclick="exportChartsToPDF()">匯出圖表 PDF</button>
 
 <script>
   const logForm = document.getElementById("logForm");
   const tableBody = document.getElementById("tableBody");
-
   let records = JSON.parse(localStorage.getItem("asthmaRecords") || "[]");
 
   function renderTable(data = records) {
@@ -123,13 +126,13 @@
         "time", "name", "inhalerMorning", "inhalerEvening", "singulair",
         "foodName", "ingredients", "weight", "asthmaAttack", "emergencyUsed", "emergencyTimes",
         "coldCough", "coldRunnyNose", "coldFever", "rhinitis",
-        "nightCough", "dayWheezing", "nightWheezing", "activityLimited",
+        "nightCough", "dayWheezing", "nightWheezing", "exerciseWheezing", "activityLimited",
         "skinItch", "rash"
       ];
       fields.forEach(f => {
         const cell = document.createElement("td");
         const val = record[f];
-        cell.textContent = (val === true) ? '✔️' : (val === false || val === undefined) ? '' : val;
+        cell.textContent = (val === true) ? '✔️' : (val === false || val === undefined || val === "") ? '' : val;
         row.appendChild(cell);
       });
       tableBody.appendChild(row);
@@ -164,6 +167,7 @@
       nightCough: document.getElementById("nightCough").checked,
       dayWheezing: document.getElementById("dayWheezing").checked,
       nightWheezing: document.getElementById("nightWheezing").checked,
+      exerciseWheezing: document.getElementById("exerciseWheezing").checked,
       activityLimited: document.getElementById("activityLimited").checked,
       skinItch: document.getElementById("skinItch").checked,
       rash: document.getElementById("rash").checked
@@ -189,6 +193,58 @@
     });
   }
 
+  // 用藥+症狀資料依日期+小朋友合併成一筆
+  function mergeAsthmaRecordsByDate(records) {
+    const mergedMap = {};
+    records.forEach(r => {
+      const date = r.time.split(' ')[0];
+      const key = `${date}_${r.name}`;
+      if (!mergedMap[key]) {
+        mergedMap[key] = {
+          time: date,
+          name: r.name,
+          inhalerMorning: false,
+          inhalerEvening: false,
+          singulair: false,
+          asthmaAttack: false,
+          emergencyUsed: false,
+          emergencyTimes: 0,
+          coldCough: false,
+          coldRunnyNose: false,
+          coldFever: false,
+          rhinitis: false,
+          nightCough: false,
+          dayWheezing: false,
+          nightWheezing: false,
+          exerciseWheezing: false,
+          activityLimited: false
+        };
+      }
+      const m = mergedMap[key];
+      m.inhalerMorning = m.inhalerMorning || r.inhalerMorning;
+      m.inhalerEvening = m.inhalerEvening || r.inhalerEvening;
+      m.singulair = m.singulair || r.singulair;
+      m.asthmaAttack = m.asthmaAttack || r.asthmaAttack;
+      m.emergencyUsed = m.emergencyUsed || r.emergencyUsed;
+      m.emergencyTimes += r.emergencyTimes || 0;
+      m.coldCough = m.coldCough || r.coldCough;
+      m.coldRunnyNose = m.coldRunnyNose || r.coldRunnyNose;
+      m.coldFever = m.coldFever || r.coldFever;
+      m.rhinitis = m.rhinitis || r.rhinitis;
+      m.nightCough = m.nightCough || r.nightCough;
+      m.dayWheezing = m.dayWheezing || r.dayWheezing;
+      m.nightWheezing = m.nightWheezing || r.nightWheezing;
+      m.exerciseWheezing = m.exerciseWheezing || r.exerciseWheezing;
+      m.activityLimited = m.activityLimited || r.activityLimited;
+    });
+    return Object.values(mergedMap);
+  }
+
+  function filterTable() {
+    const filtered = filterRecords();
+    renderTable(filtered);
+  }
+
   function exportFoodCSV() {
     const filtered = filterRecords();
     const headers = ['時間', '小朋友', '食物名稱', '成分', '重量', '皮膚搔癢', '起紅疹'];
@@ -207,23 +263,17 @@
     });
 
     const csvContent = '\uFEFF' + csvRows.map(r => r.join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `氣喘日誌_食物_皮膚紀錄.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadCSV(csvContent, '氣喘日誌_食物_皮膚紀錄.csv');
   }
 
   function exportAsthmaCSV() {
     const filtered = filterRecords();
-    const headers = ['時間', '小朋友', '吸入劑(早)', '吸入劑(晚)', '欣流', '氣喘', '緊急', '使用次數', '咳嗽', '鼻水', '發燒', '鼻炎', '夜咳', '白喘', '晚喘', '影響活動'];
+    const merged = mergeAsthmaRecordsByDate(filtered);
+
+    const headers = ['日期', '小朋友', '吸入劑(早)', '吸入劑(晚)', '欣流', '氣喘', '緊急', '使用次數', '咳嗽', '鼻水', '發燒', '鼻炎', '夜咳', '白喘', '晚喘', '運動喘鳴', '影響活動'];
     const csvRows = [headers];
 
-    filtered.forEach(r => {
+    merged.forEach(r => {
       csvRows.push([
         r.time,
         r.name,
@@ -240,317 +290,171 @@
         r.nightCough ? '✔️' : '',
         r.dayWheezing ? '✔️' : '',
         r.nightWheezing ? '✔️' : '',
+        r.exerciseWheezing ? '✔️' : '',
         r.activityLimited ? '✔️' : ''
       ]);
     });
 
     const csvContent = '\uFEFF' + csvRows.map(r => r.join(',')).join('\n');
+    downloadCSV(csvContent, '氣喘日誌_用藥_症狀紀錄.csv');
+  }
+
+  function downloadCSV(csvContent, filename) {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `氣喘日誌_用藥_症狀紀錄.csv`;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
 
-  function exportToPDFSeparated() {
+  async function exportToPDFSeparated() {
     const filtered = filterRecords();
+    const merged = mergeAsthmaRecordsByDate(filtered);
+
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    doc.setFontSize(12);
-    doc.setFont('NotoSansCJKtc', 'normal');
-
     let y = 20;
 
-    // 食物 + 皮膚症狀頁
+    // 食物 + 皮膚症狀 (不合併)
+    doc.setFontSize(14);
     doc.text('【食物紀錄與皮膚症狀】', 10, y);
     y += 12;
 
-    filtered.forEach(r => {
-      if (y > 270) {
-        doc.addPage();
-        y = 20;
-      }
-
-      doc.text(`時間：${r.time}  小朋友：${r.name}`, 10, y);
+    filtered.forEach((r, i) => {
+      if (y > 270) { doc.addPage(); y = 20; }
+      doc.setFontSize(12);
+      doc.text(`時間：${r.time} 小朋友：${r.name}`, 10, y);
       y += 8;
-
-      const foodText = `食物：${r.foodName || '-'} / 成分：${r.ingredients || '-'} / 重量：${r.weight || '-'}g`;
-      doc.text(foodText, 10, y);
+      doc.text(`食物：${r.foodName || '-'} / 成分：${r.ingredients || '-'} / 重量：${r.weight || '-'}g`, 10, y);
       y += 8;
-
-      const skinText = `皮膚搔癢：${r.skinItch ? '✔️' : '-'}  起紅疹：${r.rash ? '✔️' : '-'}`;
-      doc.text(skinText, 10, y);
+      doc.text(`皮膚搔癢：${r.skinItch ? '✔️' : '-'}  起紅疹：${r.rash ? '✔️' : '-'}`, 10, y);
       y += 12;
     });
 
     doc.addPage();
     y = 20;
-    doc.text('【用藥與氣喘症狀紀錄】', 10, y);
+    doc.setFontSize(14);
+    doc.text('【用藥與症狀紀錄（合併同日同人）】', 10, y);
     y += 12;
 
-    filtered.forEach(r => {
-      if (y > 270) {
-        doc.addPage();
-        y = 20;
-      }
-
-      doc.text(`時間：${r.time}  小朋友：${r.name}`, 10, y);
+    merged.forEach((r, i) => {
+      if (y > 270) { doc.addPage(); y = 20; }
+      doc.setFontSize(12);
+      doc.text(`日期：${r.time} 小朋友：${r.name}`, 10, y);
       y += 8;
-
-      const meds = [];
-      if (r.inhalerMorning) meds.push('吸入劑(早)');
-      if (r.inhalerEvening) meds.push('吸入劑(晚)');
-      if (r.singulair) meds.push('欣流');
-
-      const symptoms = [];
-      if (r.asthmaAttack) symptoms.push('氣喘');
-      if (r.emergencyUsed) symptoms.push(`緊急用藥(${r.emergencyTimes || 0}次)`);
-      if (r.coldCough) symptoms.push('咳嗽');
-      if (r.coldRunnyNose) symptoms.push('流鼻水');
-      if (r.coldFever) symptoms.push('發燒');
-      if (r.rhinitis) symptoms.push('鼻炎');
-      if (r.nightCough) symptoms.push('夜咳');
-      if (r.dayWheezing) symptoms.push('白喘');
-      if (r.nightWheezing) symptoms.push('晚喘');
-      if (r.activityLimited) symptoms.push('影響活動');
-
-      if (meds.length > 0) {
-        doc.text(`用藥：${meds.join('、')}`, 10, y);
-        y += 8;
-      }
-      if (symptoms.length > 0) {
-        doc.text(`症狀：${symptoms.join('、')}`, 10, y);
-        y += 12;
-      } else {
-        y += 8;
-      }
+      doc.text(
+        `吸入劑(早)：${r.inhalerMorning ? '✔️' : '-'}  吸入劑(晚)：${r.inhalerEvening ? '✔️' : '-'}  欣流：${r.singulair ? '✔️' : '-'}`, 10, y);
+      y += 8;
+      doc.text(
+        `氣喘：${r.asthmaAttack ? '✔️' : '-'}  緊急：${r.emergencyUsed ? '✔️' : '-'}  使用次數：${r.emergencyTimes}`, 10, y);
+      y += 8;
+      doc.text(
+        `咳嗽：${r.coldCough ? '✔️' : '-'}  鼻水：${r.coldRunnyNose ? '✔️' : '-'}  發燒：${r.coldFever ? '✔️' : '-'}  鼻炎：${r.rhinitis ? '✔️' : '-'}`, 10, y);
+      y += 8;
+      doc.text(
+        `夜咳：${r.nightCough ? '✔️' : '-'}  白喘：${r.dayWheezing ? '✔️' : '-'}  晚喘：${r.nightWheezing ? '✔️' : '-'}  運動喘鳴：${r.exerciseWheezing ? '✔️' : '-'}  影響活動：${r.activityLimited ? '✔️' : '-'}`, 10, y);
+      y += 12;
     });
 
-    doc.save(`氣喘日誌_分開匯出.pdf`);
-  }
-
-  function filterTable() {
-    const filtered = filterRecords();
-    renderTable(filtered);
+    doc.save('氣喘日誌_分開匯出.pdf');
   }
 
   function searchByDate() {
-    const searchDate = document.getElementById('searchDate').value;
-    const searchName = document.getElementById('searchName').value;
-    const rows = tableBody.querySelectorAll('tr');
-
-    rows.forEach(row => {
-      const date = row.querySelector('td').textContent.split(' ')[0];
-      const name = row.querySelectorAll('td')[1].textContent;
-
-      const matchDate = !searchDate || date === searchDate;
-      const matchName = (searchName === "all") || (name === searchName);
-
-      row.style.display = (matchDate && matchName) ? '' : 'none';
+    const searchDate = document.getElementById("searchDate").value;
+    const searchName = document.getElementById("searchName").value;
+    if (!searchDate) {
+      alert("請選擇查詢日期");
+      return;
+    }
+    const filtered = records.filter(r => {
+      const date = r.time.split(' ')[0];
+      const matchDate = date === searchDate;
+      const matchName = (searchName === "all") || (r.name === searchName);
+      return matchDate && matchName;
     });
+    renderTable(filtered);
   }
 
   function resetSearch() {
-    document.getElementById('searchDate').value = '';
-    document.getElementById('searchName').value = 'all';
-    const rows = tableBody.querySelectorAll('tr');
-    rows.forEach(row => row.style.display = '');
+    document.getElementById("searchDate").value = "";
+    document.getElementById("searchName").value = "all";
+    renderTable();
   }
 
-  let medicationChart = null;
-  let symptomsChart = null;
+  // Chart
+  let chartMed, chartSymp;
 
   function updateCharts() {
-    const filtered = filterRecords(); // 用同樣的篩選條件，方便跟匯出、表格同步
+    const filtered = filterRecords();
+    const merged = mergeAsthmaRecordsByDate(filtered);
 
-    // 用藥情形統計 (吸入劑早晚、欣流)
-    const medicationCounts = {
-      '吸入劑(早)': 0,
-      '吸入劑(晚)': 0,
-      '欣流': 0
-    };
+    // 用藥統計
+    const meds = ['inhalerMorning', 'inhalerEvening', 'singulair'];
+    const medLabels = ['吸入劑(早)', '吸入劑(晚)', '欣流'];
+    const medCounts = meds.map(med => merged.filter(r => r[med]).length);
 
-    // 症狀統計 (氣喘發作、緊急用藥、咳嗽、鼻水、發燒、鼻炎、夜咳、白喘、晚喘、影響活動、皮膚搔癢、起紅疹)
-    const symptomCounts = {
-      '氣喘發作': 0,
-      '使用緊急用藥': 0,
-      '咳嗽': 0,
-      '流鼻水': 0,
-      '發燒': 0,
-      '鼻炎': 0,
-      '夜咳': 0,
-      '白天喘鳴': 0,
-      '晚上喘鳴': 0,
-      '影響活動': 0,
-      '皮膚搔癢': 0,
-      '起紅疹': 0
-    };
+    // 症狀統計
+    const syms = ['asthmaAttack', 'emergencyUsed', 'coldCough', 'coldRunnyNose', 'coldFever', 'rhinitis',
+      'nightCough', 'dayWheezing', 'nightWheezing', 'exerciseWheezing', 'activityLimited'];
+    const symLabels = ['氣喘', '緊急', '咳嗽', '鼻水', '發燒', '鼻炎', '夜咳', '白喘', '晚喘', '運動喘鳴', '影響活動'];
+    const symCounts = syms.map(sym => merged.filter(r => r[sym]).length);
 
-    filtered.forEach(r => {
-      if (r.inhalerMorning) medicationCounts['吸入劑(早)']++;
-      if (r.inhalerEvening) medicationCounts['吸入劑(晚)']++;
-      if (r.singulair) medicationCounts['欣流']++;
+    if (chartMed) chartMed.destroy();
+    if (chartSymp) chartSymp.destroy();
 
-      if (r.asthmaAttack) symptomCounts['氣喘發作']++;
-      if (r.emergencyUsed) symptomCounts['使用緊急用藥']++;
-      if (r.coldCough) symptomCounts['咳嗽']++;
-      if (r.coldRunnyNose) symptomCounts['流鼻水']++;
-      if (r.coldFever) symptomCounts['發燒']++;
-      if (r.rhinitis) symptomCounts['鼻炎']++;
-      if (r.nightCough) symptomCounts['夜咳']++;
-      if (r.dayWheezing) symptomCounts['白天喘鳴']++;
-      if (r.nightWheezing) symptomCounts['晚上喘鳴']++;
-      if (r.activityLimited) symptomCounts['影響活動']++;
-      if (r.skinItch) symptomCounts['皮膚搔癢']++;
-      if (r.rash) symptomCounts['起紅疹']++;
-    });
-
-    // 先銷毀舊圖表（若存在）
-    if (medicationChart) medicationChart.destroy();
-    if (symptomsChart) symptomsChart.destroy();
-
-    // 建立用藥情形圖表
     const ctxMed = document.getElementById('chartMedication').getContext('2d');
-    medicationChart = new Chart(ctxMed, {
+    chartMed = new Chart(ctxMed, {
       type: 'bar',
       data: {
-        labels: Object.keys(medicationCounts),
+        labels: medLabels,
         datasets: [{
           label: '用藥次數',
-          data: Object.values(medicationCounts),
+          data: medCounts,
           backgroundColor: 'rgba(54, 162, 235, 0.7)'
         }]
       },
       options: {
-        scales: { y: { beginAtZero: true, precision: 0 } },
         responsive: true,
-        plugins: { legend: { display: false } }
+        scales: { y: { beginAtZero: true, precision: 0 } }
       }
     });
 
-    // 建立症狀狀況圖表
-    const ctxSym = document.getElementById('chartSymptoms').getContext('2d');
-    symptomsChart = new Chart(ctxSym, {
+    const ctxSymp = document.getElementById('chartSymptoms').getContext('2d');
+    chartSymp = new Chart(ctxSymp, {
       type: 'bar',
       data: {
-        labels: Object.keys(symptomCounts),
+        labels: symLabels,
         datasets: [{
-          label: '症狀出現次數',
-          data: Object.values(symptomCounts),
+          label: '症狀次數',
+          data: symCounts,
           backgroundColor: 'rgba(255, 99, 132, 0.7)'
         }]
       },
       options: {
-        scales: { y: { beginAtZero: true, precision: 0 } },
         responsive: true,
-        plugins: { legend: { display: false } }
+        scales: { y: { beginAtZero: true, precision: 0 } }
       }
     });
   }
 
-  // 頁面載入時也呼叫一次，初始化圖表
   updateCharts();
 
-  function updateCharts() {
-    const filtered = filterRecords(); // 同篩選條件
-
-    // 用藥項目
-    const medicationLabels = ['吸入劑(早)', '吸入劑(晚)', '欣流'];
-    const symptomLabels = ['氣喘發作', '使用緊急用藥', '咳嗽', '流鼻水', '發燒', '鼻炎', '夜咳', '白天喘鳴', '晚上喘鳴', '影響活動', '皮膚搔癢', '起紅疹'];
-
-    // 初始化計數物件，分樂樂和沐沐
-    const medicationCounts = {
-      樂樂: { '吸入劑(早)': 0, '吸入劑(晚)': 0, '欣流': 0 },
-      沐沐: { '吸入劑(早)': 0, '吸入劑(晚)': 0, '欣流': 0 }
-    };
-    const symptomCounts = {
-      樂樂: {},
-      沐沐: {}
-    };
-    symptomLabels.forEach(label => {
-      symptomCounts.樂樂[label] = 0;
-      symptomCounts.沐沐[label] = 0;
-    });
-
-    // 統計
-    filtered.forEach(r => {
-      const n = r.name;
-      if (r.inhalerMorning) medicationCounts[n]['吸入劑(早)']++;
-      if (r.inhalerEvening) medicationCounts[n]['吸入劑(晚)']++;
-      if (r.singulair) medicationCounts[n]['欣流']++;
-
-      if (r.asthmaAttack) symptomCounts[n]['氣喘發作']++;
-      if (r.emergencyUsed) symptomCounts[n]['使用緊急用藥']++;
-      if (r.coldCough) symptomCounts[n]['咳嗽']++;
-      if (r.coldRunnyNose) symptomCounts[n]['流鼻水']++;
-      if (r.coldFever) symptomCounts[n]['發燒']++;
-      if (r.rhinitis) symptomCounts[n]['鼻炎']++;
-      if (r.nightCough) symptomCounts[n]['夜咳']++;
-      if (r.dayWheezing) symptomCounts[n]['白天喘鳴']++;
-      if (r.nightWheezing) symptomCounts[n]['晚上喘鳴']++;
-      if (r.activityLimited) symptomCounts[n]['影響活動']++;
-      if (r.skinItch) symptomCounts[n]['皮膚搔癢']++;
-      if (r.rash) symptomCounts[n]['起紅疹']++;
-    });
-
-    // 銷毀舊圖表
-    if (medicationChart) medicationChart.destroy();
-    if (symptomsChart) symptomsChart.destroy();
-
-    // 建立用藥情形圖表，兩個 dataset
-    const ctxMed = document.getElementById('chartMedication').getContext('2d');
-    medicationChart = new Chart(ctxMed, {
-      type: 'bar',
-      data: {
-        labels: medicationLabels,
-        datasets: [
-          {
-            label: 'Elvis',
-            data: medicationLabels.map(l => medicationCounts.樂樂[l]),
-            backgroundColor: 'rgba(54, 162, 235, 0.7)'
-          },
-          {
-            label: 'Enya',
-            data: medicationLabels.map(l => medicationCounts.沐沐[l]),
-            backgroundColor: 'rgba(255, 159, 64, 0.7)'
-          }
-        ]
-      },
-      options: {
-        scales: { y: { beginAtZero: true, precision: 0 } },
-        responsive: true,
-      }
-    });
-
-    // 建立症狀圖表，兩個 dataset
-    const ctxSym = document.getElementById('chartSymptoms').getContext('2d');
-    symptomsChart = new Chart(ctxSym, {
-      type: 'bar',
-      data: {
-        labels: symptomLabels,
-        datasets: [
-          {
-            label: 'Elvis',
-            data: symptomLabels.map(l => symptomCounts.樂樂[l]),
-            backgroundColor: 'rgba(54, 162, 235, 0.7)'
-          },
-          {
-            label: 'Enya',
-            data: symptomLabels.map(l => symptomCounts.沐沐[l]),
-            backgroundColor: 'rgba(255, 159, 64, 0.7)'
-          }
-        ]
-      },
-      options: {
-        scales: { y: { beginAtZero: true, precision: 0 } },
-        responsive: true,
-      }
-    });
+  function exportChartsToPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('landscape');
+    doc.setFontSize(14);
+    doc.text('用藥統計', 10, 10);
+    doc.addImage(chartMed.toBase64Image(), 'PNG', 10, 15, 270, 100);
+    doc.addPage();
+    doc.text('症狀統計', 10, 10);
+    doc.addImage(chartSymp.toBase64Image(), 'PNG', 10, 15, 270, 100);
+    doc.save('氣喘日誌_圖表分析.pdf');
   }
 </script>
+
 </body>
 </html>
