@@ -171,80 +171,32 @@
 
   // 匯出 CSV，合併同一天資料
   function exportToCSV() {
-    const grouped = groupByDate(records);
-    const headers = ['日期', '小朋友', '吸入劑(早)', '吸入劑(晚)', '欣流', '食物', '成分', '重量', '氣喘', '緊急', '次數', '咳嗽', '鼻水', '發燒', '鼻炎', '夜咳', '白喘', '晚喘', '影響活動', '皮膚搔癢', '起紅疹'];
+    const headers = ['時間', '小朋友', '吸入劑(早)', '吸入劑(晚)', '欣流', '食物', '成分', '重量', '氣喘', '緊急', '次數', '咳嗽', '鼻水', '發燒', '鼻炎', '夜咳', '白喘', '晚喘', '影響活動', '皮膚搔癢', '起紅疹'];
     const csvRows = [headers];
-
-    Object.entries(grouped).forEach(([date, group]) => {
-      const entry = {
-        date,
-        name: group.name,
-        inhalerMorning: '',
-        inhalerEvening: '',
-        singulair: '',
-        foodName: [],
-        ingredients: [],
-        weight: [],
-        asthmaAttack: '',
-        emergencyUsed: '',
-        emergencyTimes: 0,
-        coldCough: '',
-        coldRunnyNose: '',
-        coldFever: '',
-        rhinitis: '',
-        nightCough: '',
-        dayWheezing: '',
-        nightWheezing: '',
-        activityLimited: '',
-        skinItch: '',
-        rash: ''
-      };
-
-      group.data.forEach(r => {
-        if (r.inhalerMorning) entry.inhalerMorning = '✔️';
-        if (r.inhalerEvening) entry.inhalerEvening = '✔️';
-        if (r.singulair) entry.singulair = '✔️';
-        if (r.asthmaAttack) entry.asthmaAttack = '✔️';
-        if (r.emergencyUsed) entry.emergencyUsed = '✔️';
-        if (r.coldCough) entry.coldCough = '✔️';
-        if (r.coldRunnyNose) entry.coldRunnyNose = '✔️';
-        if (r.coldFever) entry.coldFever = '✔️';
-        if (r.rhinitis) entry.rhinitis = '✔️';
-        if (r.nightCough) entry.nightCough = '✔️';
-        if (r.dayWheezing) entry.dayWheezing = '✔️';
-        if (r.nightWheezing) entry.nightWheezing = '✔️';
-        if (r.activityLimited) entry.activityLimited = '✔️';
-        if (r.skinItch) entry.skinItch = '✔️';
-        if (r.rash) entry.rash = '✔️';
-
-        if (r.foodName) entry.foodName.push(r.foodName);
-        if (r.ingredients) entry.ingredients.push(r.ingredients);
-        if (r.weight) entry.weight.push(r.weight);
-        entry.emergencyTimes += Number(r.emergencyTimes || 0);
-      });
-
+  
+    records.forEach(r => {
       csvRows.push([
-        entry.date,
-        entry.name,
-        entry.inhalerMorning,
-        entry.inhalerEvening,
-        entry.singulair,
-        entry.foodName.join(' / '),
-        entry.ingredients.join(' / '),
-        entry.weight.join(' / '),
-        entry.asthmaAttack,
-        entry.emergencyUsed,
-        entry.emergencyTimes,
-        entry.coldCough,
-        entry.coldRunnyNose,
-        entry.coldFever,
-        entry.rhinitis,
-        entry.nightCough,
-        entry.dayWheezing,
-        entry.nightWheezing,
-        entry.activityLimited,
-        entry.skinItch,
-        entry.rash
+        r.time,
+        r.name,
+        r.inhalerMorning ? '✔️' : '',
+        r.inhalerEvening ? '✔️' : '',
+        r.singulair ? '✔️' : '',
+        r.foodName || '',
+        r.ingredients || '',
+        r.weight || '',
+        r.asthmaAttack ? '✔️' : '',
+        r.emergencyUsed ? '✔️' : '',
+        r.emergencyTimes || 0,
+        r.coldCough ? '✔️' : '',
+        r.coldRunnyNose ? '✔️' : '',
+        r.coldFever ? '✔️' : '',
+        r.rhinitis ? '✔️' : '',
+        r.nightCough ? '✔️' : '',
+        r.dayWheezing ? '✔️' : '',
+        r.nightWheezing ? '✔️' : '',
+        r.activityLimited ? '✔️' : '',
+        r.skinItch ? '✔️' : '',
+        r.rash ? '✔️' : ''
       ]);
     });
 
@@ -253,7 +205,7 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = '氣喘日誌_整合.csv';
+    a.download = '氣喘日誌_每筆記錄.csv';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -263,54 +215,52 @@
   function exportToPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    doc.setFontSize(14);
+    doc.setFontSize(12);
     doc.setFont('NotoSansCJKtc', 'normal');
 
-    const grouped = groupByDate(records);
     let y = 20;
 
-    Object.entries(grouped).forEach(([date, group]) => {
-      doc.text(`日期：${date}  小朋友：${group.name}`, 10, y);
-      y += 10;
-
-      // 合併描述，示範用食物和症狀簡略列出
-      const foods = group.data.map(r => r.foodName).filter(Boolean).join(' / ');
-      if(foods) {
-        doc.text(`食物：${foods}`, 10, y);
-        y += 8;
-      }
-    
-      // 症狀標示
-      const symptomsLabels = ['吸入劑(早)', '吸入劑(晚)', '欣流', '氣喘', '使用緊急用藥', '咳嗽', '流鼻水', '發燒', '鼻炎', '夜咳', '白喘', '晚喘', '影響活動', '皮膚搔癢', '起紅疹'];
-      const symptomFields = ['inhalerMorning','inhalerEvening','singulair','asthmaAttack','emergencyUsed','coldCough','coldRunnyNose','coldFever','rhinitis','nightCough','dayWheezing','nightWheezing','activityLimited','skinItch','rash'];
-      const symptomStatus = {};
-
-      symptomFields.forEach(f => symptomStatus[f] = false);
-
-      group.data.forEach(r => {
-        symptomFields.forEach(f => {
-          if (r[f]) symptomStatus[f] = true;
-        });
-      });
-
-      let symptomText = symptomFields.map((f,i) => symptomStatus[f] ? symptomsLabels[i] : null).filter(Boolean).join('、');
-      if(symptomText){
-        doc.text(`症狀：${symptomText}`, 10, y);
-        y += 10;
-      }
-
-      // 用藥次數合計
-      let emergencyTimesSum = group.data.reduce((sum,r) => sum + Number(r.emergencyTimes || 0),0);
-      doc.text(`緊急用藥次數合計：${emergencyTimesSum}`, 10, y);
-      y += 12;
-
-      if(y > 270){
+    records.forEach(r => {
+      if (y > 270) {
         doc.addPage();
         y = 20;
       }
+
+      doc.text(`時間：${r.time}  小朋友：${r.name}`, 10, y);
+      y += 8;
+
+      const foodText = r.foodName ? `食物：${r.foodName} / 成分：${r.ingredients} / 重量：${r.weight}g` : '';
+      if (foodText) {
+        doc.text(foodText, 10, y);
+        y += 8;
+      }
+
+      const symptoms = [];
+      if (r.inhalerMorning) symptoms.push('吸入劑(早)');
+      if (r.inhalerEvening) symptoms.push('吸入劑(晚)');
+      if (r.singulair) symptoms.push('欣流');
+      if (r.asthmaAttack) symptoms.push('氣喘');
+      if (r.emergencyUsed) symptoms.push(`使用緊急用藥 (${r.emergencyTimes}次)`);
+      if (r.coldCough) symptoms.push('咳嗽');
+      if (r.coldRunnyNose) symptoms.push('流鼻水');
+      if (r.coldFever) symptoms.push('發燒');
+      if (r.rhinitis) symptoms.push('鼻炎');
+      if (r.nightCough) symptoms.push('夜咳');
+      if (r.dayWheezing) symptoms.push('白喘');
+      if (r.nightWheezing) symptoms.push('晚喘');
+      if (r.activityLimited) symptoms.push('影響活動');
+      if (r.skinItch) symptoms.push('皮膚搔癢');
+      if (r.rash) symptoms.push('起紅疹');
+
+      if (symptoms.length > 0) {
+        doc.text(`症狀：${symptoms.join('、')}`, 10, y);
+        y += 10;
+      }
+
+      y += 5;
     });
 
-    doc.save("氣喘日誌_整合.pdf");
+    doc.save("氣喘日誌_每筆記錄.pdf");
   }
 
   // 查詢特定日期
