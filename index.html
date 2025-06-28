@@ -57,13 +57,32 @@
 
   <br><hr><br>
 
+  <label>選擇小朋友：
+      <select id="exportName">
+        <option value="all">全部</option>
+        <option value="樂樂">樂樂</option>
+        <option value="沐沐">沐沐</option>
+      </select>
+    </label>
+
   <label>選擇起始日期<input type="date" id="startDate"></label>
   <label>結束日期<input type="date" id="endDate"></label>
+
+  <button onclick="filterTable()">篩選顯示</button>
   <button onclick="exportToCSV()">匯出 CSV</button>
-  <button onclick="exportToPDF()">匯出 PDF 報告</button>
+  <button onclick="exportToPDF()">匯出 PDF 報告</button>  
 
   <h3>查詢特定日期紀錄</h3>
   <label>查詢日期：<input type="date" id="searchDate"></label>
+
+  <label>小朋友：
+      <select id="searchName">
+        <option value="all">全部</option>
+        <option value="樂樂">樂樂</option>
+        <option value="沐沐">沐沐</option>
+      </select>
+  </label>
+  
   <button onclick="searchByDate()">查詢</button>
   <button onclick="resetSearch()">重設</button>
 
@@ -84,15 +103,12 @@
   const logForm = document.getElementById("logForm");
   const tableBody = document.getElementById("tableBody");
 
-  // 讀取 localStorage
   let records = JSON.parse(localStorage.getItem("asthmaRecords") || "[]");
 
-  // 顯示資料到表格
-  function renderTable() {
+  function renderTable(data = records) {
     tableBody.innerHTML = '';
-    records.forEach(record => {
+    data.forEach(record => {
       const row = document.createElement("tr");
-      // 按順序輸出所有欄位，確保順序與表頭一致
       const fields = [
         "time", "name", "inhalerMorning", "inhalerEvening", "singulair",
         "foodName", "ingredients", "weight", "asthmaAttack", "emergencyUsed", "emergencyTimes",
@@ -114,14 +130,11 @@
 
   logForm.addEventListener("submit", function (e) {
     e.preventDefault();
-
-    // 取得日期與當下時間(時分)
     const now = new Date();
     const dateStr = document.getElementById("date").value;
-    const timeStr = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
+    const timeStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
     const dateTime = dateStr + " " + timeStr;
 
-    // 新增一筆紀錄
     const record = {
       time: dateTime,
       name: document.getElementById("name").value,
@@ -152,29 +165,27 @@
     logForm.reset();
   });
 
-  // 將資料依日期合併
-  function groupByDate(data) {
-    const grouped = {};
-    data.forEach(r => {
-      const date = r.time.split(' ')[0];
-      if (!grouped[date]) {
-        grouped[date] = {
-          name: r.name,
-          data: [r]
-        };
-      } else {
-        grouped[date].data.push(r);
-      }
+  function filterRecords() {
+    const selectedName = document.getElementById("exportName").value;
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
+
+    return records.filter(r => {
+      const recordDate = r.time.split(' ')[0];
+      const matchName = (selectedName === "all") || (r.name === selectedName);
+      const matchStart = (!startDate || recordDate >= startDate);
+      const matchEnd = (!endDate || recordDate <= endDate);
+      return matchName && matchStart && matchEnd;
     });
-    return grouped;
   }
 
-  // 匯出 CSV，合併同一天資料
   function exportToCSV() {
+    const selectedName = document.getElementById("exportName").value;
+    const filtered = filterRecords();
     const headers = ['時間', '小朋友', '吸入劑(早)', '吸入劑(晚)', '欣流', '食物', '成分', '重量', '氣喘', '緊急', '次數', '咳嗽', '鼻水', '發燒', '鼻炎', '夜咳', '白喘', '晚喘', '影響活動', '皮膚搔癢', '起紅疹'];
     const csvRows = [headers];
-  
-    records.forEach(r => {
+
+    filtered.forEach(r => {
       csvRows.push([
         r.time,
         r.name,
@@ -205,14 +216,16 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = '氣喘日誌_每筆記錄.csv';
+    a.download = `氣喘日誌_${selectedName}_篩選記錄.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
-  
+
   function exportToPDF() {
+    const selectedName = document.getElementById("exportName").value;
+    const filtered = filterRecords();
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     doc.setFontSize(12);
@@ -220,7 +233,7 @@
 
     let y = 20;
 
-    records.forEach(r => {
+    filtered.forEach(r => {
       if (y > 270) {
         doc.addPage();
         y = 20;
@@ -260,22 +273,33 @@
       y += 5;
     });
 
-    doc.save("氣喘日誌_每筆記錄.pdf");
+    doc.save(`氣喘日誌_${selectedName}_篩選記錄.pdf`);
   }
 
-  // 查詢特定日期
+  function filterTable() {
+    const filtered = filterRecords();
+    renderTable(filtered);
+  }
+
   function searchByDate() {
     const searchDate = document.getElementById('searchDate').value;
+    const searchName = document.getElementById('searchName').value;
     const rows = tableBody.querySelectorAll('tr');
+
     rows.forEach(row => {
       const date = row.querySelector('td').textContent.split(' ')[0];
-      row.style.display = (date === searchDate) ? '' : 'none';
+      const name = row.querySelectorAll('td')[1].textContent;
+
+      const matchDate = !searchDate || date === searchDate;
+      const matchName = (searchName === "all") || (name === searchName);
+
+      row.style.display = (matchDate && matchName) ? '' : 'none';
     });
   }
 
-  // 重設查詢，顯示全部
   function resetSearch() {
     document.getElementById('searchDate').value = '';
+    document.getElementById('searchName').value = 'all';
     const rows = tableBody.querySelectorAll('tr');
     rows.forEach(row => row.style.display = '');
   }
