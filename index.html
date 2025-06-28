@@ -259,18 +259,8 @@
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
-
-  // 匯出 PDF，合併同一天資料
-  function exportToPDF() {
-    const element = document.getElementById('logTable'); // 或任何容器
-    html2pdf().set({
-      filename: '氣喘日誌.pdf',
-      html2canvas: { scale: 2 },
-      jsPDF: { format: 'a4', orientation: 'portrait' }
-    }).from(element).save();
-  }
   
-  /*function exportToPDF() {
+  function exportToPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     doc.setFontSize(14);
@@ -321,7 +311,7 @@
     });
 
     doc.save("氣喘日誌_整合.pdf");
-  }*/
+  }
 
   // 查詢特定日期
   function searchByDate() {
