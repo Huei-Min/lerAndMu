@@ -70,8 +70,11 @@
   <label>結束日期<input type="date" id="endDate"></label>
 
   <button onclick="filterTable()">篩選顯示</button>
-  <button onclick="exportToCSV()">匯出 CSV</button>
-  <button onclick="exportToPDF()">匯出 PDF 報告</button>  
+  <button onclick="exportFoodCSV()">匯出 食物+皮膚 CSV</button>
+  <button onclick="exportAsthmaCSV()">匯出 用藥+症狀 CSV</button>
+  <button onclick="exportToPDFSeparated()">匯出 分開PDF</button>
+  <!--<button onclick="exportToCSV()">匯出 CSV</button>
+  <button onclick="exportToPDF()">匯出 PDF 報告</button>  -->
 
   <h3>查詢特定日期紀錄</h3>
   <label>查詢日期：<input type="date" id="searchDate"></label>
