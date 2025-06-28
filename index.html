@@ -90,9 +90,11 @@
     logForm.addEventListener("submit", function (e) {
       e.preventDefault();
       const now = new Date();
-      const time = `${document.getElementById("date").value} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      const dateStr = document.getElementById("date").value;
+      const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      const dateTime = `${dateStr} ${timeStr}`;
       const record = {
-        time,
+        time: dateTime,
         name: document.getElementById("name").value,
         inhalerMorning: document.getElementById("inhalerMorning").checked,
         inhalerEvening: document.getElementById("inhalerEvening").checked,
